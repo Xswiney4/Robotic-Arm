@@ -15,7 +15,7 @@ else
     # For Linux (Raspberry Pi) or other Unix-like systems
     DEL = rm -f
     RMDIR = rm -rf
-    MKDIR = mkdir -p
+    MKDIR = mkdir -p "$(BUILD_DIR)"
     EXEC = main  # Linux executable (no .exe)
 endif
 
@@ -44,8 +44,14 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Cleaning build artifacts
 clean:
+ifeq ($(OS),Windows_NT)
+	# Windows cleanup
 	@if exist build $(DEL) build\* 
 	@if exist build $(RMDIR) build
 	@if exist $(EXEC) $(DEL) $(EXEC)
+else
+	# Linux cleanup
+	rm -rf $(BUILD_DIR) $(EXEC)
+endif
 
 .PHONY: all clean
