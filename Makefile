@@ -1,6 +1,6 @@
 # Compiler and flags
-CC = gcc
-CFLAGS = -Wall -Iinclude
+CC = g++
+CFLAGS = -Wall -std=c++17 -Iinclude
 
 # Check if we are on Windows
 ifeq ($(OS),Windows_NT)
@@ -24,8 +24,8 @@ SRC_DIR = src
 BUILD_DIR = build
 
 # Source and object files
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRCS))
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 
 # Output binary name
 TARGET = $(EXEC)  # Output file is dependent on platform
