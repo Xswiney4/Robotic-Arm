@@ -1,9 +1,10 @@
 #ifndef PCA9685_H
 #define PCA9685_H
 
-#include <string>  // For std::string
+#include <string> // For std::string
 
-class PCA9685 {
+class PCA9685
+{
 private:
     int fileDescriptor; // I2C file descriptor
     int address;        // I2C slave address

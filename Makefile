@@ -26,7 +26,7 @@ endif
 # Directories
 SRC_DIR = src
 BUILD_DIR = build
-TEST_DIR = test
+TEST_DIR = tests
 
 # Output binary name
 TARGET = $(EXEC)  # Output file is dependent on platform
@@ -83,13 +83,11 @@ $(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
 # Cleanup build:
 clean:
 ifeq ($(OS),Windows_NT)
-	# Windows cleanup
 	@if exist build $(DEL) build\* 
 	@if exist build $(RMDIR) build
 	@if exist $(EXEC) $(DEL) $(EXEC)
-	@if exist $(TEST_TARGET) $(DEL) $(TEST_TARGET)
+	@if exist $(TEST_EXEC) $(DEL) $(TEST_EXEC)
 else
-	# Linux cleanup
 	@rm -rf $(BUILD_DIR) $(EXEC)
 	@if [ -f $(TEST_TARGET) ]; then rm $(TEST_TARGET) > /dev/null 2>&1; fi
 endif
