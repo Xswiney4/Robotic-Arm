@@ -1,3 +1,4 @@
+/*
 #include "pca9685.h"
 #include <fcntl.h>     // For open
 #include <unistd.h>    // For close, read, write
@@ -6,26 +7,22 @@
 #include <stdexcept>   // For std::runtime_error
 #include <iostream>    // For std::cerr
 
-// Constructor: Opens the I2C bus and sets the slave address
-PCA9685::PCA9685(int i2cBus, int addr) : address(addr) {
-    std::string busPath = "/dev/i2c-" + std::to_string(i2cBus);
-    fileDescriptor = open(busPath.c_str(), O_RDWR);
-    if (fileDescriptor < 0) {
-        throw std::runtime_error("Failed to open I2C bus");
+// Constructor: Saves i2c information and sets slave address
+PCA9685::PCA9685(int* i2cBusPtr, int addr){
+    
+    // Validate i2cBus pointer
+    if (i2cBusPtr == nullptr) {
+        throw std::invalid_argument("I2C bus pointer is null");
     }
-
-    if (ioctl(fileDescriptor, I2C_SLAVE, address) < 0) {
-        close(fileDescriptor);
+    
+    this -> i2cBus = i2cBus;
+    this -> address = addr;
+    
+    // Sets i2c to communicate ONLY with this slave address
+    if (ioctl(*i2cBusPtr, I2C_SLAVE, addr) < 0) {
         throw std::runtime_error("Failed to set I2C slave address");
     }
 
-    // Initialization sequence
-    setPWMFreq(50); // Default frequency
-}
-
-// Destructor: Closes the I2C file
-PCA9685::~PCA9685() {
-    close(fileDescriptor);
 }
 
 // Writes a byte to a register
@@ -65,3 +62,4 @@ void PCA9685::setPWM(int channel, int on, int off) {
     writeRegister(0x08 + 4 * channel, off & 0xFF);
     writeRegister(0x09 + 4 * channel, off >> 8);
 }
+*/

@@ -6,18 +6,20 @@
 class PCA9685
 {
 private:
-    int fileDescriptor; // I2C file descriptor
+    int* i2cBusPtr; // I2C file descriptor
     int address;        // I2C slave address
 
-    void writeRegister(uint8_t reg, uint8_t value);
-    uint8_t readRegister(uint8_t reg);
-
 public:
-    PCA9685(int i2cBus, int address);
-    ~PCA9685();
-
-    void setPWM(int channel, int on, int off);
-    void setPWMFreq(float frequency);
+    PCA9685(int* i2cBusPtr, int address); // Constructor
+    ~PCA9685(); // Destructor
+    
+	bool initialize(int pwmFreq); // Initialize
+	
+    bool writeReg(uint8_t reg, uint8_t value);
+    uint8_t readReg(uint8_t reg);
+    
+    setPWMFreq(int pwmFreq); // Sets PWM frequency
+    
 };
 
 #endif
