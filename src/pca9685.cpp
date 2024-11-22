@@ -19,6 +19,7 @@ PCA9685::PCA9685(I2C* i2cPtr, uint8_t addr, uint8_t prescaler) : i2c(i2cPtr), ad
     }
     
     setPrescaler(prescaler);
+    allOff();
 }
 
 // Destructor
@@ -109,7 +110,7 @@ void PCA9685::validateDuty(float duty){
 
 // Validates value is between 0 and 15
 void PCA9685::validateChannel(uint8_t channel){
-    if(channel > -1 && channel < 16){
+    if(channel >= 0 && channel < 16){
         return;
     }
     throw std::runtime_error("Failed to validate Channel");
@@ -120,7 +121,7 @@ void PCA9685::validateChannel(uint8_t channel){
 
 // Sets Prescaler given frequency in Hz
 void PCA9685::setPWMFrequency(int freq){
-    setPrescaler(uint8_t(round(25000.0/(4096 * freq)) - 1));
+    setPrescaler(uint8_t(round(25000000.0/(4096.0 * freq)) - 1));
 }
 
 // Switches ALL_LED_OFF - off (Effectively turning on ALL channels)
@@ -169,9 +170,9 @@ void PCA9685::setPWM(uint8_t channel, uint16_t onTime, uint16_t offTime){
     
     // Seperate input into bytes
     uint8_t onLowByte = onTime & 0x00FF;
-    uint8_t onHighByte = (onTime >> 4) & 0x0F;
+    uint8_t onHighByte = (onTime >> 8) & 0x0F;
     uint8_t offLowByte = offTime & 0x00FF;
-    uint8_t offHighByte = (offTime >> 4) & 0x0F;
+    uint8_t offHighByte = (offTime >> 8) & 0x0F;
     
     // Write values to registers
     writeReg(onLowReg,onLowByte);
@@ -189,5 +190,37 @@ void PCA9685::setDuty(uint8_t channel, float duty){
     
     setPWM(channel, onTime, offTime);
     
+}
+
+// Sets ONLY the offTime
+void PCA9685::setOffTime(uint8_t channel, uint16_t offTime){
+    
+    // Get Register Addresses
+    uint8_t offLowReg = getRegister(channel, 0, 0);
+    uint8_t offHighReg = offLowReg + 1;
+    
+    // Seperate input into bytes
+    uint8_t offLowByte = offTime & 0x00FF;
+    uint8_t offHighByte = (offTime >> 8) & 0x0F;
+    
+    // Write values to registers
+    writeReg(offLowReg,offLowByte);
+    writeReg(offHighReg,offHighByte);
+}
+
+// Sets ONLY the onTime
+void PCA9685::setOnTime(uint8_t channel, uint16_t onTime){
+    
+    // Get Register Addresses
+    uint8_t onLowReg = getRegister(channel, 1, 0);
+    uint8_t onHighReg = onLowReg + 1;
+    
+    // Seperate input into bytes
+    uint8_t onLowByte = onTime & 0x00FF;
+    uint8_t onHighByte = (onTime >> 8) & 0x0F;
+    
+    // Write values to registers
+    writeReg(onLowReg,onLowByte);
+    writeReg(onHighReg,onHighByte);
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

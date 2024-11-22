@@ -35,7 +35,7 @@ private:
 
 public:
 	// Constructor/Destructor
-    PCA9685(I2C* i2cPtr, uint8_t addr, uint8_t prescaler = 0x1E);
+    PCA9685(I2C* i2cPtr, uint8_t addr, uint8_t prescaler = 0x1E); // Default prescaler is 50hz
     ~PCA9685();
     
     // Global Controls
@@ -51,6 +51,8 @@ public:
 	void switchOff(uint8_t channel); 	// Turns channel off
 	void setPWM(uint8_t channel, uint16_t onTime, uint16_t offTime); 	// Sets PWM on/off times (more precise)
     void setDuty(uint8_t channel, float duty); 							// Sets Duty cycle of channel (less precise)
+    void setOffTime(uint8_t channel, uint16_t offTime);					// Sets ONLY the offTime
+    void setOnTime(uint8_t channel, uint16_t onTime);					// Sets ONLY the onTime
     
 };
 
