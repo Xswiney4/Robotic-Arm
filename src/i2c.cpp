@@ -61,7 +61,7 @@ bool I2C::validateSlave(uint8_t slave){
 
 // Registers slave into database
 bool I2C::registerSlave(uint8_t addr){
-	if(!validateSlave(addr)){
+	if(!validateSlave(addr) && pingSlave(addr)){
 		slaves.push_back(addr);
 		return true;
 	}
