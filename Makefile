@@ -1,11 +1,16 @@
 # Compiler and flags
-CC = g++
-CFLAGS = -Wall -std=c++17 -Iinclude
+CC = aarch64-linux-gnu-gcc # C compiler 
+CXX = aarch64-linux-gnu-g++ # C++ compiler
+CFLAGS = -Wall -std=c99 -mcpu=cortex-a72 -march=armv8-a \
+    -I$(FREERTOS_DIR)/include \
+    -I$(FREERTOS_PORT_DIR)
+CXXFLAGS = -Wall -std=c++17 -Iinclude
 
 # Check if we are on Windows
 ifeq ($(OS),Windows_NT)
     # If on Windows, set appropriate compiler (MinGW)
-    CC = g++.exe
+    CC = gcc.exe
+    CXX = g++.exe
     # Set Windows-specific paths and cleanup commands
     DEL = del /q
     RMDIR = rmdir /s /q
@@ -27,6 +32,8 @@ endif
 SRC_DIR = src
 BUILD_DIR = build
 TEST_DIR = tests
+FREERTOS_DIR = libs/FreeRTOS-Kernel
+FREERTOS_PORT_DIR = $(FREERTOS_DIR)/portable/GCC/ARM_AARCH64
 
 # Output binary name
 TARGET = $(EXEC)  # Output file is dependent on platform
@@ -38,7 +45,11 @@ all: $(TARGET)
 # Source and object files for all target
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 TEST_SRC = $(TEST_DIR)/$(TEST_FILE)
-OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
+C_SRCS = $(wildcard $(FREERTOS_DIR)/*.c) \
+         $(wildcard $(FREERTOS_PORT_DIR)/*.c) # Add FreeRTOS kernel files
+C_OBJS = $(patsubst $(FREERTOS_DIR)/%.c, $(BUILD_DIR)/%.o, $(C_SRCS))
+CXX_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
+OBJS = $(CXX_OBJS) $(C_OBJS)
 TEST_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(filter-out $(SRC_DIR)/main.cpp, $(SRCS))) $(BUILD_DIR)/$(basename $(TEST_FILE)).o
 
 
@@ -64,21 +75,26 @@ test: TEST_FILE_CHECK $(TEST_TARGET)
 
 # Linking the executable
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $@
+	$(CXX) $(OBJS) -o $@
 
 # Linking the test executable
 $(TEST_TARGET): $(TEST_OBJS)
-	$(CC) $(TEST_OBJS) -o $@
+	$(CXX) $(TEST_OBJS) -o $@
 
-# Compiling object files from src directory
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+# Compiling C object files from src directory
+$(BUILD_DIR)/%.o: $(FREERTOS_DIR)/%.c
 	$(MKDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compiling C++ object files from src directory
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(MKDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Compiling object files from test directory
 $(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
 	$(MKDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Cleanup build:
 clean:

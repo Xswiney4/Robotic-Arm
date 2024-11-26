@@ -664,4 +664,28 @@
 #define INCLUDE_xTaskGetHandle                 0
 #define INCLUDE_xTaskResumeFromISR             1
 
+/******************************************************************************/
+/* ARM Coretex-A Specific Config files. *********************************/
+/******************************************************************************/
+
+/* Defines how many unique interrupt priority levels your hardware supports
+*/
+#define configUNIQUE_INTERRUPT_PRIORITIES    32
+
+/* Defines the base address of GIC
+*/
+#define configINTERRUPT_CONTROLLER_BASE_ADDRESS 0xFF840000
+
+/* This defines the offset from configINTERRUPT_CONTROLLER_BASE_ADDRESS to the GIC CPU interface.
+*/
+#define configINTERRUPT_CONTROLLER_CPU_INTERFACE_OFFSET  0x1000
+
+/* This defines the maximum interrupt priority from which FreeRTOS API functions can be called.
+*/
+#define configMAX_API_CALL_INTERRUPT_PRIORITY  31
+
+/* This defines the maximum interrupt priority from which FreeRTOS API functions can be called.
+*/
+#define configSETUP_TICK_INTERRUPT() vSetupTickInterrupt()
+
 #endif /* FREERTOS_CONFIG_H */
