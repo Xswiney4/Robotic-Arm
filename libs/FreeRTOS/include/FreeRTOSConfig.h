@@ -325,10 +325,6 @@
  * to ARM Cortex-M devices. */
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY     191
 
-/* Another name for configMAX_SYSCALL_INTERRUPT_PRIORITY - the name used depends
- * on the FreeRTOS port. */
-#define configMAX_API_CALL_INTERRUPT_PRIORITY    0
-
 /******************************************************************************/
 /* Hook and callback function related definitions. ****************************/
 /******************************************************************************/
@@ -362,7 +358,7 @@
  * configCHECK_FOR_STACK_OVERFLOW is set to 1. See
  * https://www.freertos.org/Stacks-and-stack-overflow-checking.html  Defaults to
  * 0 if left undefined. */
-#define configCHECK_FOR_STACK_OVERFLOW        2
+#define configCHECK_FOR_STACK_OVERFLOW        0
 
 /******************************************************************************/
 /* Run time and task stats gathering related definitions. *********************/
@@ -680,12 +676,15 @@
 */
 #define configINTERRUPT_CONTROLLER_CPU_INTERFACE_OFFSET  0x1000
 
-/* This defines the maximum interrupt priority from which FreeRTOS API functions can be called.
-*/
+/* Another name for configMAX_SYSCALL_INTERRUPT_PRIORITY - the name used depends
+ * on the FreeRTOS port. */
 #define configMAX_API_CALL_INTERRUPT_PRIORITY  31
 
-/* This defines the maximum interrupt priority from which FreeRTOS API functions can be called.
+/* 
 */
+void vSetupTickInterrupt(void);
 #define configSETUP_TICK_INTERRUPT() vSetupTickInterrupt()
+#define FreeRTOS_IRQ_Handler IRQ_Handler
+#define FreeRTOS_SWI_Handler SWI_Handler
 
 #endif /* FREERTOS_CONFIG_H */

@@ -4,7 +4,9 @@ CXX = aarch64-linux-gnu-g++ # C++ compiler
 CFLAGS = -Wall -std=c99 -mcpu=cortex-a72 -march=armv8-a \
     -I$(FREERTOS_DIR)/include \
     -I$(FREERTOS_PORT_DIR)
-CXXFLAGS = -Wall -std=c++17 -Iinclude
+CXXFLAGS = -Wall -std=c++17 -Iinclude \
+	-I$(FREERTOS_DIR)/include \
+    -I$(FREERTOS_PORT_DIR)
 
 # Check if we are on Windows
 ifeq ($(OS),Windows_NT)
@@ -22,7 +24,7 @@ else
     # For Linux (Raspberry Pi) or other Unix-like systems
     DEL = rm -f
     RMDIR = rm -rf
-    MKDIR = mkdir -p "$(BUILD_DIR)"
+    MKDIR = mkdir -p $(dir $@)
     EXEC = main  # Linux executable (no .exe)
     TEST_EXEC = testExe
     PATH_SEP = /  # Linux uses forward slashes
@@ -32,25 +34,91 @@ endif
 SRC_DIR = src
 BUILD_DIR = build
 TEST_DIR = tests
-FREERTOS_DIR = libs/FreeRTOS-Kernel
+
+# FreeRTOS
+HEAP = heap_1
+HEAP_DIR = $(FREERTOS_DIR)/portable/MemMang
+FREERTOS_DIR = libs/FreeRTOS
 FREERTOS_PORT_DIR = $(FREERTOS_DIR)/portable/GCC/ARM_AARCH64
 
 # Output binary name
-TARGET = $(EXEC)  # Output file is dependent on platform
+TARGET = $(EXEC)
 TEST_TARGET = $(TEST_EXEC)
 
 # Default target:
 all: $(TARGET)
 
-# Source and object files for all target
-SRCS = $(wildcard $(SRC_DIR)/*.cpp)
-TEST_SRC = $(TEST_DIR)/$(TEST_FILE)
-C_SRCS = $(wildcard $(FREERTOS_DIR)/*.c) \
-         $(wildcard $(FREERTOS_PORT_DIR)/*.c) # Add FreeRTOS kernel files
-C_OBJS = $(patsubst $(FREERTOS_DIR)/%.c, $(BUILD_DIR)/%.o, $(C_SRCS))
-CXX_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
-OBJS = $(CXX_OBJS) $(C_OBJS)
-TEST_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(filter-out $(SRC_DIR)/main.cpp, $(SRCS))) $(BUILD_DIR)/$(basename $(TEST_FILE)).o
+# Test target:
+test: TEST_FILE_CHECK $(TEST_TARGET)
+
+### Source Files ###
+
+# FreeRTOS Sources
+FREERTOS_SRCS = $(wildcard $(FREERTOS_DIR)/*.c) # FreeRTOS Files
+FREERTOS_PORT_SRCS = $(wildcard $(FREERTOS_PORT_DIR)/*.c) \
+					 $(FREERTOS_PORT_DIR)/portASM.S
+FREERTOS_HEAP_SRC = $(HEAP_DIR)/$(HEAP).c
+
+# C++ Files
+CXX_SRCS = $(wildcard $(SRC_DIR)/*.cpp) # Project SRC Files
+TEST_SRC = $(TEST_DIR)/$(TEST_FILE) # Test "main.cpp" file to run
+
+### Object Files ###
+
+# FreeRTOS Object Files
+FREERTOS_OBJS = $(patsubst $(FREERTOS_DIR)/%.c, $(BUILD_DIR)/$(FREERTOS_DIR)/%.o, $(FREERTOS_SRCS)) # FreeRTOS Files
+FREERTOS_PORT_OBJS = $(patsubst $(FREERTOS_PORT_DIR)/%.c, $(BUILD_DIR)/$(FREERTOS_PORT_DIR)/%.o, $(FREERTOS_PORT_SRCS)) # FreeRTOS Port Files
+FREERTOS_PORT_OBJS += $(BUILD_DIR)/$(FREERTOS_PORT_DIR)/portASM.o # FreeRTOS Port Files
+FREERTOS_HEAP_OBJ = $(BUILD_DIR)/$(HEAP_DIR)/$(HEAP).o # FreeRTOS Heap File
+
+
+# C++ Object Files
+CXX_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(CXX_SRCS))
+
+# All Objects
+OBJS = $(CXX_OBJS) $(FREERTOS_OBJS) $(FREERTOS_PORT_OBJS) $(FREERTOS_HEAP_OBJ)
+
+# All Test Objects (All + test.cpp - main.cpp)
+TEST_OBJS = $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) # $(OBJS) - main.cpp
+TEST_OBJS += $(patsubst %.cpp, %.o, $(TEST_SRC)) # 			     + test.cpp
+
+### Compiling ###
+
+# Compiling FreeRTOS Files
+$(BUILD_DIR)/$(FREERTOS_DIR)/%.o: $(FREERTOS_DIR)/%.c
+	@$(MKDIR)
+	$(info Compiling $@...)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compiling FreeRTOS Port Files
+$(BUILD_DIR)/$(FREERTOS_PORT_DIR)/%.o: $(FREERTOS_PORT_DIR)/%.c
+	@$(MKDIR)
+	$(info Compiling $@...)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compiling FreeRTOS Port .S Files
+$(BUILD_DIR)/$(FREERTOS_PORT_DIR)/%.o: $(FREERTOS_PORT_DIR)/%.S
+	@$(MKDIR)
+	$(info Compiling $@...)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compiling C++ object files from src directory
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@$(MKDIR)
+	$(info Compiling $@...)
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+### Linking ###
+
+# Linking Executable
+$(TARGET): $(OBJS)
+	$(info Linking all object files into $@...)
+	@$(CXX) $(CXXFLAGS) $(OBJS) -o $@
+
+# Linking Test Executable
+$(TEST_TARGET): $(TEST_OBJS)
+	$(info Linking object files without main.o, and including $(TEST_FILE) into $@...)
+	@$(CXX) $(CXXFLAGS) $(TEST_OBJS) -o $@
 
 
 # Check if the target is 'test'
@@ -69,32 +137,6 @@ ifeq ($(filter test,$(MAKECMDGOALS)),test)
 		exit 1; \
 	fi
 endif
-
-# Test target:
-test: TEST_FILE_CHECK $(TEST_TARGET)
-
-# Linking the executable
-$(TARGET): $(OBJS)
-	$(CXX) $(OBJS) -o $@
-
-# Linking the test executable
-$(TEST_TARGET): $(TEST_OBJS)
-	$(CXX) $(TEST_OBJS) -o $@
-
-# Compiling C object files from src directory
-$(BUILD_DIR)/%.o: $(FREERTOS_DIR)/%.c
-	$(MKDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Compiling C++ object files from src directory
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(MKDIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Compiling object files from test directory
-$(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
-	$(MKDIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Cleanup build:
 clean:
