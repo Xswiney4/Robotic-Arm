@@ -1,11 +1,12 @@
 # Compiler and flags
-CC = g++
-CFLAGS = -Wall -std=c++17 -Iinclude
+CXX = aarch64-linux-gnu-g++ # C++ compiler
+CXXFLAGS = -Wall -std=c++17 -Iinclude
 
 # Check if we are on Windows
 ifeq ($(OS),Windows_NT)
     # If on Windows, set appropriate compiler (MinGW)
-    CC = g++.exe
+    CC = gcc.exe
+    CXX = g++.exe
     # Set Windows-specific paths and cleanup commands
     DEL = del /q
     RMDIR = rmdir /s /q
@@ -17,7 +18,7 @@ else
     # For Linux (Raspberry Pi) or other Unix-like systems
     DEL = rm -f
     RMDIR = rm -rf
-    MKDIR = mkdir -p "$(BUILD_DIR)"
+    MKDIR = mkdir -p $(dir $@)
     EXEC = main  # Linux executable (no .exe)
     TEST_EXEC = testExe
     PATH_SEP = /  # Linux uses forward slashes
@@ -29,17 +30,54 @@ BUILD_DIR = build
 TEST_DIR = tests
 
 # Output binary name
-TARGET = $(EXEC)  # Output file is dependent on platform
+TARGET = $(EXEC)
 TEST_TARGET = $(TEST_EXEC)
 
 # Default target:
 all: $(TARGET)
 
-# Source and object files for all target
-SRCS = $(wildcard $(SRC_DIR)/*.cpp)
-TEST_SRC = $(TEST_DIR)/$(TEST_FILE)
-OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
-TEST_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(filter-out $(SRC_DIR)/main.cpp, $(SRCS))) $(BUILD_DIR)/$(basename $(TEST_FILE)).o
+# Test target:
+test: TEST_FILE_CHECK $(TEST_TARGET)
+
+### Source Files ###
+
+# C++ Files
+CXX_SRCS = $(wildcard $(SRC_DIR)/*.cpp) # Project SRC Files
+TEST_SRC = $(TEST_DIR)/$(TEST_FILE) # Test "main.cpp" file to run
+
+### Object Files ###
+
+# C++ Object Files
+CXX_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(CXX_SRCS))
+
+# All Objects
+OBJS = $(CXX_OBJS)
+
+# All Test Objects (All + test.cpp - main.cpp)
+TEST_OBJS = $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) # $(OBJS) - main.cpp
+TEST_OBJS += $(patsubst %.cpp, %.o, $(TEST_SRC)) # 			     + test.cpp
+
+### Compiling ###
+
+# Compiling C++ object files from src directory
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@$(MKDIR)
+	$(info Compiling $@...)
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+### Linking ###
+
+# Linking Executable
+$(TARGET): $(OBJS)
+	$(info Linking all object files into $@...)
+	$(info Linking: $(OBJS))
+	@$(CXX) $(CXXFLAGS) $(OBJS) -o $@
+
+# Linking Test Executable
+$(TEST_TARGET): $(TEST_OBJS)
+	$(info Linking object files without main.o, and including $(TEST_FILE) into $@...)
+	$(info Linking: $(TEST_OBJS))
+	@$(CXX) $(CXXFLAGS) $(TEST_OBJS) -o $@
 
 
 # Check if the target is 'test'
@@ -58,27 +96,6 @@ ifeq ($(filter test,$(MAKECMDGOALS)),test)
 		exit 1; \
 	fi
 endif
-
-# Test target:
-test: TEST_FILE_CHECK $(TEST_TARGET)
-
-# Linking the executable
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $@
-
-# Linking the test executable
-$(TEST_TARGET): $(TEST_OBJS)
-	$(CC) $(TEST_OBJS) -o $@
-
-# Compiling object files from src directory
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(MKDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Compiling object files from test directory
-$(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
-	$(MKDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
 
 # Cleanup build:
 clean:
