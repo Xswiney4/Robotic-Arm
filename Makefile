@@ -55,8 +55,8 @@ test: TEST_FILE_CHECK $(TEST_TARGET)
 
 # FreeRTOS Sources
 FREERTOS_SRCS = $(wildcard $(FREERTOS_DIR)/*.c) # FreeRTOS Files
-FREERTOS_PORT_SRCS = $(wildcard $(FREERTOS_PORT_DIR)/*.c) \
-					 $(FREERTOS_PORT_DIR)/portASM.S
+FREERTOS_PORT_SRCS = $(wildcard $(FREERTOS_PORT_DIR)/*.c)
+FREERTOS_PORT_ASM_SRC = $(FREERTOS_PORT_DIR)/portASM.S
 FREERTOS_HEAP_SRC = $(HEAP_DIR)/$(HEAP).c
 
 # C++ Files
@@ -68,7 +68,7 @@ TEST_SRC = $(TEST_DIR)/$(TEST_FILE) # Test "main.cpp" file to run
 # FreeRTOS Object Files
 FREERTOS_OBJS = $(patsubst $(FREERTOS_DIR)/%.c, $(BUILD_DIR)/$(FREERTOS_DIR)/%.o, $(FREERTOS_SRCS)) # FreeRTOS Files
 FREERTOS_PORT_OBJS = $(patsubst $(FREERTOS_PORT_DIR)/%.c, $(BUILD_DIR)/$(FREERTOS_PORT_DIR)/%.o, $(FREERTOS_PORT_SRCS)) # FreeRTOS Port Files
-FREERTOS_PORT_OBJS += $(BUILD_DIR)/$(FREERTOS_PORT_DIR)/portASM.o # FreeRTOS Port Files
+FREERTOS_PORT_ASM_OBJ = $(BUILD_DIR)/$(FREERTOS_PORT_DIR)/portASM.o # FreeRTOS Port Files
 FREERTOS_HEAP_OBJ = $(BUILD_DIR)/$(HEAP_DIR)/$(HEAP).o # FreeRTOS Heap File
 
 
@@ -76,7 +76,7 @@ FREERTOS_HEAP_OBJ = $(BUILD_DIR)/$(HEAP_DIR)/$(HEAP).o # FreeRTOS Heap File
 CXX_OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(CXX_SRCS))
 
 # All Objects
-OBJS = $(CXX_OBJS) $(FREERTOS_OBJS) $(FREERTOS_PORT_OBJS) $(FREERTOS_HEAP_OBJ)
+OBJS = $(CXX_OBJS) $(FREERTOS_OBJS) $(FREERTOS_PORT_OBJS) $(FREERTOS_HEAP_OBJ) $(FREERTOS_PORT_ASM_OBJ)
 
 # All Test Objects (All + test.cpp - main.cpp)
 TEST_OBJS = $(filter-out $(BUILD_DIR)/main.o, $(OBJS)) # $(OBJS) - main.cpp
@@ -113,11 +113,13 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # Linking Executable
 $(TARGET): $(OBJS)
 	$(info Linking all object files into $@...)
+	$(info Linking: $(OBJS))
 	@$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 # Linking Test Executable
 $(TEST_TARGET): $(TEST_OBJS)
 	$(info Linking object files without main.o, and including $(TEST_FILE) into $@...)
+	$(info Linking: $(OBJS))
 	@$(CXX) $(CXXFLAGS) $(TEST_OBJS) -o $@
 
 
