@@ -3,6 +3,9 @@
 
 #include "pca9685.h"
 #include <cstdint>  // For uint8_t
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 class Servo
 {
@@ -16,6 +19,7 @@ private:
     float maxAngle; // Max angle
     uint16_t minPulse; // Low pulse width value in microseconds
     uint16_t maxPulse; // High pulse width value in microseconds
+    uint16_t stepPeriod; // Period the velocity steps trigger at in milliseconds
     
     // Preprocessed variables
     float angleToPwmSlope; // Preprocessed slop for calculating pulse width
@@ -23,17 +27,28 @@ private:
     
     // Real-Time Characteristics
     float targetAngle;
-    float rotationSpeed;
+    float currentAngle;
+    float rotationSpeed; // Degrees / Second
     
-    // Helper methods
-    
+    // Velocity Control
+    bool running;
+    bool clockwise; // True if moving clockwise
+    std::chrono::time_point<std::chrono::steady_clock> startTime;
+
+    void velocityControlThread();
+
+    // Helper Methods
+    void step(); // Takes a step towards the target position
+
+    // Servo Control (Private)
+    void setPosition(float angle);	// In degrees
 
 public:
 	// Constructor
-    Servo(PCA9685* pca9685, uint8_t pcaChannel, uint8_t pwmFreq ,uint16_t minPulse, uint16_t maxPulse, float maxAngle);
+    Servo(PCA9685* pca9685, uint8_t pcaChannel, uint8_t pwmFreq ,uint16_t minPulse, uint16_t maxPulse, float maxAngle, float rotationSpeed, float stepFreq);
     
-    // Servo Control
-    void setAngleDeg(float angle);	// In degrees
+    // Servo Control (Public)
+    void moveToPosition(float angle); // In degrees
     void setSpeed(float speed);		// In radians/second
     
     void disable(); // Disables servo motor
