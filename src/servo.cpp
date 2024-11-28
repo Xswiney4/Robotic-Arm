@@ -6,21 +6,26 @@
 #include <cmath> // For round()
 #include <algorithm>  // For std::clamp
 #include <iostream>
+#include <unistd.h> // For sleep()
+
+// Initialize static mutex
+std::mutex Servo::pcaMutex;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Constructor ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Constructor: Creates and initializes object
-Servo::Servo(PCA9685* pca9685, uint8_t pcaChannel, uint8_t pwmFreq, 
-			uint16_t minPulse, uint16_t maxPulse, float maxAngle, float rotationSpeed, float stepFreq)
-		  : pca(pca9685), pcaChannel(pcaChannel), pwmFreq(pwmFreq)
-		  , minPulse(minPulse), maxPulse(maxPulse), maxAngle(maxAngle)
-          , rotationSpeed(rotationSpeed), running(false){
+Servo::Servo(const ServoParams& params)
+		  : pca(params.pca9685), pcaChannel(params.pcaChannel)
+          , pcaPwmFreq(params.pcaPwmFreq), minPulse(params.minPulse)
+          , maxPulse(params.maxPulse), maxAngle(params.maxAngle)
+          , defaultAngle(params.defaultAngle)
+          , rotationSpeed(params.rotationSpeed), running(false){
     
     // Preprocessing for angle calculations based on servo motor characteristics
     angleToPwmSlope = ((maxPulse - minPulse) / maxAngle);
-    stepSize = 1000000.0f / (4096.0 * pwmFreq);
-    stepPeriod = 1000.0f / stepFreq; // In ms
+    stepSize = 1000000.0f / (4096.0 * pcaPwmFreq);
+    rotationStepPeriod = 1000.0f / params.rotationStepFreq; // In ms
     
     // Switches channel off
     disable();
@@ -30,6 +35,18 @@ Servo::Servo(PCA9685* pca9685, uint8_t pcaChannel, uint8_t pwmFreq,
     
 }
 
+Servo::~Servo(){
+    // Wait until we're done running
+    while(running){
+        sleep(1);
+    }
+    // Move to 0 position
+    this->moveToPosition(0);
+    // Wait until we're done running
+    while(running){
+        sleep(1);
+    }
+}
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Thread Method ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -40,8 +57,8 @@ void Servo::velocityControlThread(){
         // Takes a step towards the target
         step();
 
-        // Pause this thread for (stepPeriod)ms 
-         std::this_thread::sleep_for(std::chrono::milliseconds(stepPeriod));
+        // Pause this thread for (rotationStepPeriod)ms 
+         std::this_thread::sleep_for(std::chrono::milliseconds(rotationStepPeriod));
 
     }
     running = false;
@@ -80,7 +97,7 @@ void Servo::setPosition(float angle){
 	// Clamp angle value
 	angle = std::clamp(angle, 0.0f, maxAngle);
 
-    std::cout << "Setting angle to " << angle << std::endl;
+    //std::cout << "Setting angle to " << angle << std::endl;
 	
 	// Map angle to pulseWidth
 	float pulseWidth = angleToPwmSlope * angle + minPulse;
@@ -114,9 +131,9 @@ void Servo::moveToPosition(float angle){
     }
 
     // Creates thread
-    std::thread t(&Servo::velocityControlThread, this);
+    std::thread workingThread(&Servo::velocityControlThread, this);
 
-    t.detach();
+    workingThread.detach();
     
 
 

@@ -6,6 +6,27 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <mutex>
+
+// Parameters
+struct ServoParams{
+
+    // PCA9685 Params
+    PCA9685* pca9685;
+    uint8_t pcaChannel;
+    uint8_t pcaPwmFreq;
+    std::mutex pcaMutex;
+
+    // Servo Characteristics
+    uint16_t minPulse;
+    uint16_t maxPulse;
+    float maxAngle;
+    float defaultAngle;
+
+    // Rotation Characteristics
+    float rotationSpeed;
+    float rotationStepFreq;
+};
 
 class Servo
 {
@@ -13,13 +34,15 @@ private:
 	// Private Variables
     PCA9685* pca; 		// Pointer to PCA object
     uint8_t pcaChannel; // Channel on PCA
-    uint8_t pwmFreq; 	// Frequency the PCA is running at
+    uint8_t pcaPwmFreq; 	// Frequency the PCA is running at
+    static std::mutex pcaMutex; // Mutex for accessing the PCA
     
     // Servo Characteristic Variables
     float maxAngle; // Max angle
     uint16_t minPulse; // Low pulse width value in microseconds
     uint16_t maxPulse; // High pulse width value in microseconds
-    uint16_t stepPeriod; // Period the velocity steps trigger at in milliseconds
+    float defaultAngle; // Angle the motor will start at, and move to when deconstructed
+    uint16_t rotationStepPeriod; // Period the velocity steps trigger at in milliseconds
     
     // Preprocessed variables
     float angleToPwmSlope; // Preprocessed slop for calculating pulse width
@@ -44,9 +67,10 @@ private:
     void setPosition(float angle);	// In degrees
 
 public:
-	// Constructor
-    Servo(PCA9685* pca9685, uint8_t pcaChannel, uint8_t pwmFreq ,uint16_t minPulse, uint16_t maxPulse, float maxAngle, float rotationSpeed, float stepFreq);
-    
+	// Constructor / Destructor
+    Servo(const ServoParams& params);
+    ~Servo();
+
     // Servo Control (Public)
     void moveToPosition(float angle); // In degrees
     void setSpeed(float speed);		// In radians/second

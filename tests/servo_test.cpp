@@ -20,6 +20,7 @@ const float SERVO_1_SPEED =  90; // degrees/second
 const float SERVO_1_STEP_FREQ = 50; // Hz
 
 
+
 int main() {
     I2C i2c(I2C_DIRECTORY);                  // Create I2C object
     PCA9685 pca9685(&i2c, PCA9685_ADDR);     // Pass pointer to I2C object and address
@@ -31,14 +32,12 @@ int main() {
 	
 	std::cout << "Setting angle to 270..." << std::endl;
 	servo1.moveToPosition(270);
-	sleep(10);
-	std::cout << "Setting angle to 270..." << std::endl;
+	sleep(5);
+	std::cout << "Setting angle to 100..." << std::endl;
 	servo1.moveToPosition(100);
-	sleep(10);
-	std::cout << "Setting angle to 270..." << std::endl;
+	sleep(5);
+	std::cout << "Setting angle to 163.3..." << std::endl;
 	servo1.moveToPosition(163.3);
     
-    while (true){
-		sleep(1);
-	}
+    return 0;
 }
