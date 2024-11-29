@@ -15,7 +15,6 @@ struct ServoParams{
     PCA9685* pca9685;
     uint8_t pcaChannel;
     uint8_t pcaPwmFreq;
-    std::mutex pcaMutex;
 
     // Servo Characteristics
     uint16_t minPulse;
@@ -72,12 +71,12 @@ public:
     ~Servo();
 
     // Servo Control (Public)
-    void moveToPosition(float angle); // In degrees
+    std::thread moveToPosition(float angle); // In degrees
     void setSpeed(float speed);		// In radians/second
     
     void disable(); // Disables servo motor
     void enable(); // Enables servo motor
-    
+
 };
 
 #endif

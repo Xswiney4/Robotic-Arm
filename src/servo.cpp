@@ -19,7 +19,7 @@ Servo::Servo(const ServoParams& params)
 		  : pca(params.pca9685), pcaChannel(params.pcaChannel)
           , pcaPwmFreq(params.pcaPwmFreq), minPulse(params.minPulse)
           , maxPulse(params.maxPulse), maxAngle(params.maxAngle)
-          , defaultAngle(params.defaultAngle)
+          , defaultAngle(params.defaultAngle), currentAngle(params.defaultAngle)
           , rotationSpeed(params.rotationSpeed), running(false){
     
     // Preprocessing for angle calculations based on servo motor characteristics
@@ -36,31 +36,37 @@ Servo::Servo(const ServoParams& params)
 }
 
 Servo::~Servo(){
-    // Wait until we're done running
-    while(running){
-        sleep(1);
-    }
-    // Move to 0 position
-    this->moveToPosition(0);
-    // Wait until we're done running
-    while(running){
-        sleep(1);
-    }
+
+    // Move to default position
+    this->moveToPosition(defaultAngle).join();
+
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Thread Method ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Thread used to control movement toward the target position
 void Servo::velocityControlThread(){
-    while(currentAngle != targetAngle){
+    while(true){
+
+        // This mutex prevents multiple threads from communicating with the PCA at the same time
+        std::unique_lock<std::mutex> lock(pcaMutex);
 
         // Takes a step towards the target
         step();
 
-        // Pause this thread for (rotationStepPeriod)ms 
-         std::this_thread::sleep_for(std::chrono::milliseconds(rotationStepPeriod));
+        // Unlock mutex
+        lock.unlock();
 
+        // Checks to see if we've reached the target
+        if(currentAngle == targetAngle){
+            break;
+        }
+        else{
+            // Pause this thread for (rotationStepPeriod)ms 
+            std::this_thread::sleep_for(std::chrono::milliseconds(rotationStepPeriod));
+        }
     }
+    
     running = false;
 }
 
@@ -82,6 +88,7 @@ void Servo::step(){
     else{
         currentAngle = std::clamp(currentAngle - std::chrono::duration_cast<std::chrono::duration<float>>(deltaTime).count() * rotationSpeed,targetAngle,maxAngle);
     }
+
 
     // Sets the angle
     this->setPosition(currentAngle);
@@ -110,14 +117,12 @@ void Servo::setPosition(float angle){
     
 }
 
-// Moves the servo position smoothly towards the input angle (Public)
-void Servo::moveToPosition(float angle){
-    
-    // This prevents two threads from attempting to control the servo at once.
-    if(running){
-        printf("Thread is already running, please wait until it's finished");
-        return;
-    }
+/* Moves the servo position smoothly towards the input angle (Public)
+ * The thread needs to be either joined or detached after running this function
+ * moveToPosition().join() -> Start thread and wait until the motion is complete
+ * moveToPostion().detach() -> Start thread and run in background
+ */
+std::thread Servo::moveToPosition(float angle){
 
     // Sets global
     targetAngle = angle;
@@ -132,10 +137,8 @@ void Servo::moveToPosition(float angle){
 
     // Creates thread
     std::thread workingThread(&Servo::velocityControlThread, this);
-
-    workingThread.detach();
     
-
+    return workingThread;
 
 }
 
@@ -148,8 +151,10 @@ void Servo::setSpeed(float speed){
 void Servo::disable(){
 	pca -> switchOff(pcaChannel);
 }
+
 // Enables servo motor
 void Servo::enable(){
 	pca -> switchOn(pcaChannel);
 }
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
