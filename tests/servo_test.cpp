@@ -15,9 +15,9 @@ const uint8_t PWM_FREQ = 50; // hz
 const uint16_t SERVO_1_MIN_PULSE = 500; // microseconds
 const uint16_t SERVO_1_MAX_PULSE = 2500; // microseconds
 const float SERVO_1_MAX_ANGLE = 270; // degrees
-const float SERVO_1_DEFAULT_ANGLE = 0; // degrees
+const float SERVO_1_DEFAULT_ANGLE = 135; // degrees
 
-const float SERVO_1_SPEED =  90; // degrees/second
+const float SERVO_1_SPEED =  45; // degrees/second
 const float SERVO_1_STEP_FREQ = 50; // Hz
 
 
@@ -37,18 +37,29 @@ int main() {
 	Servo servo2(servo2Params);
 	
 	servo1.enable();
+
+	servo1.moveToPosition(0).join();
+	// servo2.moveToPosition(270).join();
+	sleep(5);
 	
 	std::cout << "Setting servo1 to 270 and servo2 to 120..." << std::endl;
-	servo1.moveToPosition(50).detach();
-	servo2.moveToPosition(270).join();
+	servo1.moveToPosition(45).join();
+	// servo2.moveToPosition(270).join();
+	sleep(5);
 
-	std::cout << "Setting servo1 to 100 and servo2 to 270..." << std::endl;
-	servo1.moveToPosition(190).detach();
-	servo2.moveToPosition(0).join();
+	servo1.moveToPosition(135).join();
+	// servo2.moveToPosition(0).join();
+	sleep(5);
 
-	std::cout << "Setting servo1 to 163.3 and servo2 to 50..." << std::endl;
-	servo1.moveToPosition(100).detach();
-	servo2.moveToPosition(150).join();
+	// std::cout << "Setting servo1 to 100 and servo2 to 270..." << std::endl;
+	servo1.moveToPosition(225).join();
+	// servo2.moveToPosition(0).join();
+	sleep(5);
+
+	// std::cout << "Setting servo1 to 163.3 and servo2 to 50..." << std::endl;
+	servo1.moveToPosition(270).join();
+	// servo2.moveToPosition(150).join();
+	sleep(5);
 
 	std::cout << "Terminating Program" << std::endl;
     
