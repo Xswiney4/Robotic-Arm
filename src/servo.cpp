@@ -16,14 +16,13 @@ std::mutex Servo::pcaMutex;
 // Constructor: Creates and initializes object
 Servo::Servo(const ServoParams& params)
 		  : pca(params.pca9685), pcaChannel(params.pcaChannel)
-          , pcaPwmFreq(params.pcaPwmFreq), minPulse(params.minPulse)
-          , maxPulse(params.maxPulse), maxAngle(params.maxAngle)
-          , defaultAngle(params.defaultAngle), currentAngle(params.defaultAngle)
+          , minPulse(params.minPulse), maxPulse(params.maxPulse)
+          , maxAngle(params.maxAngle), defaultAngle(params.defaultAngle)
+          , currentAngle(params.defaultAngle)
           , rotationSpeed(params.rotationSpeed), running(false){
     
     // Preprocessing for angle calculations based on servo motor characteristics
     angleToPwmSlope = ((maxPulse - minPulse) / maxAngle);
-    stepSize = 1000000.0f / (4096.0 * pcaPwmFreq);
     rotationStepPeriod = 1000.0f / params.rotationStepFreq; // In ms
     
     // Switches channel off
@@ -109,13 +108,9 @@ void Servo::setPosition(float angle){
 	float pulseWidth = angleToPwmSlope * angle + minPulse;
 
     std::cout << "pulseWidth: " << pulseWidth << std::endl;
-	
-	// Calculate offTime
-    uint16_t offTime = static_cast<uint16_t>(round(pulseWidth / stepSize));
-    std::cout << "offTime: " << offTime << std::endl;
 
     // Sets signal PWM signal up
-    pca -> setOffTime(pcaChannel, offTime);
+    pca -> setPulseWidth(pcaChannel, pulseWidth);
     
 }
 

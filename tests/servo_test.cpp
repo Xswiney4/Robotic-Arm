@@ -27,10 +27,10 @@ int main() {
     pca9685.setPWMFrequency(PWM_FREQ);
 
 	// Sets up Servo parameters
-	ServoParams servo1Params = {&pca9685, 1, PWM_FREQ, SERVO_1_MIN_PULSE, SERVO_1_MAX_PULSE
+	ServoParams servo1Params = {&pca9685, 1, SERVO_1_MIN_PULSE, SERVO_1_MAX_PULSE
 							 , SERVO_1_MAX_ANGLE, SERVO_1_DEFAULT_ANGLE, SERVO_1_SPEED, SERVO_1_STEP_FREQ};
 
-	ServoParams servo2Params = {&pca9685, 0, PWM_FREQ, SERVO_1_MIN_PULSE, SERVO_1_MAX_PULSE
+	ServoParams servo2Params = {&pca9685, 0, SERVO_1_MIN_PULSE, SERVO_1_MAX_PULSE
 							 , SERVO_1_MAX_ANGLE, SERVO_1_DEFAULT_ANGLE, SERVO_1_SPEED, SERVO_1_STEP_FREQ};
     
 	Servo servo1(servo1Params);

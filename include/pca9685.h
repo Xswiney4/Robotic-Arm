@@ -20,6 +20,7 @@ private:
 	// Private Variables
     I2C* i2c; 		// Pointer to I2C object
     uint8_t address; 	// I2C slave address
+    float stepSize; // Time duration of one step (based on prescaler)
     
     // Helper methods
     void writeReg(uint8_t reg, uint8_t value); 						// Writes a value to a register
@@ -27,6 +28,7 @@ private:
     void modifyReg(uint8_t reg, uint8_t mask, uint8_t value); 		// Modifies specific bits in a register without overwriting the entire register.
     void setPrescaler(uint8_t value); 								// Sets Prescaler Value
     uint8_t getRegister(uint8_t channel, uint8_t on, uint8_t high); // Calculates the register for a channel
+    float calculateStepSize(uint8_t prescaler);                     // Calculates step size given prescaler
     
     // Input validation (Throws error if invalid)
     void validatePrescaler(uint8_t value); 	// 3 - 255
@@ -35,7 +37,7 @@ private:
 
 public:
 	// Constructor/Destructor
-    PCA9685(I2C* i2cPtr, uint8_t addr, uint8_t prescaler = 0x1E); // Default prescaler is 50hz
+    PCA9685(I2C* i2cPtr, uint8_t addr, uint8_t prescaler = 0x79); // Default prescaler is 50hz
     ~PCA9685();
     
     // Global Controls
@@ -50,7 +52,8 @@ public:
 	void switchOn(uint8_t channel); 	// Turns channel on
 	void switchOff(uint8_t channel); 	// Turns channel off
 	void setPWM(uint8_t channel, uint16_t onTime, uint16_t offTime); 	// Sets PWM on/off times (more precise)
-    void setDuty(uint8_t channel, float duty); 							// Sets Duty cycle of channel (less precise)
+    void setPulseWidth(uint8_t channel, float pulseWidth);              // Sets PWM based on desired pulseWidth (ms)
+    void setDuty(uint8_t channel, float duty); 							// Sets PWM based on desired duty cycle
     void setOffTime(uint8_t channel, uint16_t offTime);					// Sets ONLY the offTime
     void setOnTime(uint8_t channel, uint16_t onTime);					// Sets ONLY the onTime
     

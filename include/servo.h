@@ -14,7 +14,6 @@ struct ServoParams{
     // PCA9685 Params
     PCA9685* pca9685;
     uint8_t pcaChannel;
-    uint8_t pcaPwmFreq;
 
     // Servo Characteristics
     uint16_t minPulse;
@@ -45,7 +44,6 @@ private:
     
     // Preprocessed variables
     float angleToPwmSlope; // Preprocessed slop for calculating pulse width
-    float stepSize; // Preprocessed step size for calculating on/off times
     
     // Real-Time Characteristics
     float targetAngle;
