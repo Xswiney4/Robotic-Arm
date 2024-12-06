@@ -27,7 +27,9 @@ calibrateError():
 
 #include <chrono> // For time in ms
 #include <thread> // For sleeping
-
+#include <vector>
+#include <fstream>
+#include <iostream>
 #include <cstdint>  // For uint8_t and system
 
 // I2C Config
@@ -50,8 +52,10 @@ const float SERVO_STEP_FREQ = 50;         // hz
 const uint16_t AS5600_CONFIG = 0x0000;           // Config of AS5600
 
 // Calibration Config
-const uint8_t ROUGH_PWM_STEP = 10;  // When moving towards the endpoints, this will determine the rough step width (us)
-const uint8_t FINE_PWM_STEP = 1;  // When moving towards the endpoints, this will determine the fine step width (us)
+const uint8_t ROUGH_PWM_STEP = 10; // When moving towards the endpoints, this will determine the rough step width (us)
+const uint8_t FINE_PWM_STEP = 3;   // When moving towards the endpoints, this will determine the fine step width (us)
+const uint8_t SAMPLE_PWM_STEP = 5; // When sampling, this is the amount we will increment the PWM signal in us
+const std::string SAMPLE_FILENAME = "sample.csv"; // Filename for sampling
 
 // Output Variables
 float measuredMinPulse;
@@ -65,6 +69,9 @@ int main() {
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Initialization ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    std::cout << "Beginning calibration..." << std::endl;
+    std::cout << "Initializing objects..." << std::endl;
 
     // Object Building
     I2C i2c(I2C_DIRECTORY);                  // Create I2C object
@@ -83,9 +90,13 @@ int main() {
     uint16_t MID_PULSE = (SERVO_MAX_PULSE + SERVO_MIN_PULSE) / 2;
     pca9685.setPulseWidth(CHANNEL, MID_PULSE);
 
+    std::cout << "Initialization complete." << std::endl;
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Determine Lower End ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
+    std::cout << "Measuring lower pulse width..." << std::endl;
+
     // Gets the current rotational step (0 - 4095)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     uint16_t lastAbsoluteStep = as5600.getStep();
@@ -131,7 +142,7 @@ int main() {
       pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
 
       // Give motor time to move and settle
-      // ~.45ms to move motor (BASED ON 1us STEPS) + 2.2ms ASM5600 delay + 2.35ms buffer = 5ms
+      // ~1.35ms to move motor (BASED ON 3us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 5ms
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
       // Gets the absolute rotation
@@ -154,13 +165,19 @@ int main() {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
+    std::cout << "Lower pulse width measured to be " << measuredMinPulse << "us." << std::endl;
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Zero AS5600 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    std::cout << "Zeroing AS5600..." << std::endl;
     as5600.zero();
+    std::cout << "Zeroing successful." << std::endl;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Determine Higher End ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    std::cout << "Measuring upper pulse width..." << std::endl;
 
     // Set to midpoint
     pca9685.setPulseWidth(CHANNEL, MID_PULSE);
@@ -208,7 +225,7 @@ int main() {
       pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
 
       // Give motor time to move and settle
-      // ~.45ms to move motor (BASED ON 1us STEPS) + 2.2ms ASM5600 delay + 2.35ms buffer = 5ms
+      // ~1.35ms to move motor (BASED ON 3us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 5ms
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
       // Gets the absolute rotation
@@ -231,23 +248,112 @@ int main() {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
+    std::cout << "Upper pulse width measured to be " << measuredMaxPulse << "us" << std::endl;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Calculate pwmOffset and pwmMultiplier ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
+    std::cout << "Calculating pwm calibration variables..." << std::endl;
+
     float measuredMidPulse = (measuredMaxPulse + measuredMinPulse) / 2;
 
     pwmOffset = measuredMidPulse - MID_PULSE;
     pwmMultiplier = measuredMaxPulse / (SERVO_MAX_PULSE + pwmOffset);
 
+    std::cout << "pwmOffset measured to be: " << pwmOffset << std::endl;
+    std::cout << "pwmMultiplier measured to be: " << pwmMultiplier << std::endl;
+    std::cout << "Succesfully calculated pwm calibration variables." << std::endl;
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Sample Entire Range ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    std::cout << "Sampling measured range..." << std::endl;
 
+    // This will be the dataset containing (pulseWidth, absoluteStep)
+    std::vector<std::pair<float, uint16_t>> sampleData;
+
+    // Sampling from measuredMaxPulse down:
+    for(currentPulseWidth -= SAMPLE_PWM_STEP; currentPulseWidth > measuredMinPulse; currentPulseWidth -= SAMPLE_PWM_STEP){
+     
+      // Sets channel one sample increment down
+      pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
+
+      // Give motor time to move and settle
+      // ~2.35ms to move motor (BASED ON 5us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 6ms
+      std::this_thread::sleep_for(std::chrono::milliseconds(6));
+
+      // Gets the absolute rotation
+      absoluteStep = as5600.getStep();
+
+      // Add data to dataset
+      sampleData.emplace_back(currentPulseWidth, absoluteStep);
+    }
+
+    // Exits when currentPulseWidth steps over measuredMinPulse, so now we need to go to measuredMinPulse
+    pca9685.setPulseWidth(CHANNEL, measuredMinPulse + 2 * SAMPLE_PWM_STEP);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    pca9685.setPulseWidth(CHANNEL, measuredMinPulse);
+    currentPulseWidth = measuredMinPulse;
+
+    // Sampling from measuredMinPulse up:
+    for(currentPulseWidth += SAMPLE_PWM_STEP; currentPulseWidth < measuredMaxPulse; currentPulseWidth += SAMPLE_PWM_STEP){
+     
+      // Sets channel one sample increment down
+      pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
+
+      // Give motor time to move and settle
+      // ~2.35ms to move motor (BASED ON 5us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 6ms
+      std::this_thread::sleep_for(std::chrono::milliseconds(6));
+
+      // Gets the absolute rotation
+      absoluteStep = as5600.getStep();
+
+      // Add data to dataset
+      sampleData.emplace_back(currentPulseWidth, absoluteStep);
+    }
+
+    std::cout << "Succesfully sampled measured range." << std::endl;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~ Write dataset to CSV ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    std::cout << "Writing dataset to file..." << std::endl;
+
+    // Open file
+    std::ofstream file(SAMPLE_FILENAME);
+    
+    // Check to ensure file is open
+    if(!file.is_open()){
+      std::cerr << "Error opening file!" << std::endl;
+      return;
+    }
+
+    // Write header
+    file << "Pulse Width (us),Absolute Step (0-4096)\n";
+
+    // Write data
+    for (const auto& entry : sampleData) {
+      file << entry.first << "," << entry.second << "\n";
+    }
+
+    // Close file
+    file.close();
+
+    std::cout << "Succesfully written dataset to " << SAMPLE_FILENAME << std::endl;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Calculate dcOffset and dcMultiplier ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    std::cout << "Calculating dc calibration variables..." << std::endl;
+
+
+
+    std::cout << "dcOffset measured to be: " << dcOffset << std::endl;
+    std::cout << "dcMultiplier measured to be: " << dcMultiplier << std::endl;
+    std::cout << "Succesfully calculated dc calibration variables." << std::endl;
+
+
+    std::cout << "Calibration Successful!" << std::endl;
 
     return 0;
 }
