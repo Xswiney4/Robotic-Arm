@@ -6,7 +6,7 @@
 #include <unistd.h>  // For sleep()
 
 
-const uint8_t PCA9685_ADDR = 0x40;     		    // Define PCA9685 address with correct type
+const uint8_t PCA9685_ADDR = 0x40;     		    // Define PCA9685 address
 const std::string I2C_DIRECTORY = "/dev/i2c-1"; // Define I2C directory
 
 int main() {

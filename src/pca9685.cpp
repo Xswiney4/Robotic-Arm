@@ -18,6 +18,10 @@ PCA9685::PCA9685(I2C* i2cPtr, uint8_t addr, uint8_t prescaler) : i2c(i2cPtr), ad
         throw std::runtime_error("Failed to add PCA9685 to i2c");
     }
     
+    // Preprocessing for PWM calculations
+    stepSize = calculateStepSize(prescaler);
+
+    // Set the prescaler to the default value and switch all channels off
     setPrescaler(prescaler);
     allOff();
 }
@@ -70,6 +74,8 @@ void PCA9685::modifyReg(uint8_t reg, uint8_t mask, uint8_t value){
 void PCA9685::setPrescaler(uint8_t value){
     
     validatePrescaler(value);
+
+    stepSize = calculateStepSize(value);
     sleep();
     
     writeReg(PRESCALE_REG, value);
@@ -87,6 +93,10 @@ uint8_t PCA9685::getRegister(uint8_t channel, uint8_t on, uint8_t high){
     
     return 0x08 + (channel * 4) - (2 * on) + high;
     
+}
+
+float PCA9685::calculateStepSize(uint8_t prescaler){
+    return 4096.0f * (static_cast<float>(prescaler) + 1.0f) / 25.0f;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,6 +189,17 @@ void PCA9685::setPWM(uint8_t channel, uint16_t onTime, uint16_t offTime){
     writeReg(onHighReg,onHighByte);
     writeReg(offLowReg,offLowByte);
     writeReg(offHighReg,offHighByte);
+    
+}
+
+// Sets PWM based on desired pulseWidth
+void PCA9685::setPulseWidth(uint8_t channel, float pulseWidth){
+    
+    // Calculates offTime
+    uint16_t offTime = static_cast<uint16_t>(round(pulseWidth / stepSize));
+
+    // Sets offtime for channel
+    setOffTime(channel, offTime);
     
 }
 
