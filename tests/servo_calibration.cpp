@@ -49,7 +49,7 @@ const float SERVO_SPEED =  45;            // degrees/second
 const float SERVO_STEP_FREQ = 50;         // hz
 
 // AS5600 Config
-const uint16_t AS5600_CONFIG = 0x0000;           // Config of AS5600
+const uint16_t AS5600_CONFIG = 0x000C;           // Config of AS5600
 
 // Calibration Config
 const uint8_t ROUGH_PWM_STEP = 10; // When moving towards the endpoints, this will determine the rough step width (us)
@@ -90,6 +90,8 @@ int main() {
     uint16_t MID_PULSE = (SERVO_MAX_PULSE + SERVO_MIN_PULSE) / 2;
     pca9685.setPulseWidth(CHANNEL, MID_PULSE);
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
     std::cout << "Initialization complete." << std::endl;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,7 +100,6 @@ int main() {
     std::cout << "Measuring lower pulse width..." << std::endl;
 
     // Gets the current rotational step (0 - 4095)
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     uint16_t lastAbsoluteStep = as5600.getStep();
     uint16_t absoluteStep;
 
@@ -131,7 +132,7 @@ int main() {
     currentPulseWidth = currentPulseWidth + (2 * ROUGH_PWM_STEP);
     pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
     std::this_thread::sleep_for(std::chrono::milliseconds(15));
-    uint16_t lastAbsoluteStep = as5600.getStep();
+    lastAbsoluteStep = as5600.getStep();
 
     // Fine Measurement - moves downward until motor stops
     
@@ -214,7 +215,7 @@ int main() {
     currentPulseWidth = currentPulseWidth - (2 * ROUGH_PWM_STEP);
     pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
     std::this_thread::sleep_for(std::chrono::milliseconds(15));
-    uint16_t lastAbsoluteStep = as5600.getStep();
+    lastAbsoluteStep = as5600.getStep();
 
     // Fine Measurement - moves downward until motor stops
     
@@ -325,7 +326,7 @@ int main() {
     // Check to ensure file is open
     if(!file.is_open()){
       std::cerr << "Error opening file!" << std::endl;
-      return;
+      return 1;
     }
 
     // Write header

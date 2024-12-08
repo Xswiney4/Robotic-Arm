@@ -6,6 +6,7 @@
 #include <stdexcept>   // For std::runtime_error
 #include <vector>
 #include <cmath> // For round()
+#include <iostream>
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Constructor/Destructor ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,7 +97,7 @@ uint8_t PCA9685::getRegister(uint8_t channel, uint8_t on, uint8_t high){
 }
 
 float PCA9685::calculateStepSize(uint8_t prescaler){
-    return 4096.0f * (static_cast<float>(prescaler) + 1.0f) / 25.0f;
+    return (static_cast<float>(prescaler) + 1.0f) / 25.0f;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

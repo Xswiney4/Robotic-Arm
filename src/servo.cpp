@@ -102,12 +102,12 @@ void Servo::setPosition(float angle){
 	// Clamp angle value
 	angle = std::clamp(angle, 0.0f, maxAngle);
 
-    std::cout << "Setting angle to " << angle << std::endl;
+    //std::cout << "Setting angle to " << angle << std::endl;
 	
 	// Map angle to pulseWidth
 	float pulseWidth = angleToPwmSlope * angle + minPulse;
 
-    std::cout << "pulseWidth: " << pulseWidth << std::endl;
+    //std::cout << "pulseWidth: " << pulseWidth << std::endl;
 
     // Sets signal PWM signal up
     pca -> setPulseWidth(pcaChannel, pulseWidth);

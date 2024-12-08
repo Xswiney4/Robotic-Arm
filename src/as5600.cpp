@@ -90,7 +90,7 @@ void AS5600::checkMagnet(){
     // Get status register from device
     uint8_t status = readReg(REG_MAGNET_STATUS);
 
-    std::cout << "Status Register: " << std::to_string(status) << std::endl;
+    //std::cout << "Status Register: " << std::to_string(status) << std::endl;
 
     // Seperate status indicators
     uint8_t md = (status >> 5) & 0x01;
