@@ -59,7 +59,7 @@ int main() {
 	// std::cout << "Setting servo1 to 163.3 and servo2 to 50..." << std::endl;
 	servo1.moveToPosition(270).join();
 	// servo2.moveToPosition(150).join();
-	sleep(5);
+	sleep(15);
 
 	std::cout << "Terminating Program" << std::endl;
     
