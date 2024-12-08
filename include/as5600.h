@@ -17,9 +17,12 @@
 #define REG_CONF_LSB 0x08
 
 #define REG_ZMCO 0x01
-#define REG_ZPOS_MSB 0x03
-#define REG_ZPOS_LSB 0x04
+#define REG_ZPOS_MSB 0x01
+#define REG_ZPOS_LSB 0x02
+#define REG_MPOS_MSB 0x03
+#define REG_MPOS_LSB 0x04
 
+#define REG_AGC 0x1A
 #define REG_MAGNET_STATUS 0x0B
 #define REG_MAGNITUDE_MSB 0X1B
 #define REG_MAGNITUDE_LSB 0x1C
@@ -51,6 +54,7 @@ public:
 
     // Angle Reading
     uint16_t getStep(); // Returns the rotational step of the encoder (0 - 4095)
+    uint16_t getRawStep(); // Returns the rotational step of the encoder (0 - 4095)
     float getAngle();   // Returns the angle of the encoder
 };
 
