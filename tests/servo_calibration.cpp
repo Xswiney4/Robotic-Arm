@@ -49,11 +49,11 @@ const float SERVO_SPEED =  45;            // degrees/second
 const float SERVO_STEP_FREQ = 50;         // hz
 
 // AS5600 Config
-const uint16_t AS5600_CONFIG = 0x0000;           // Config of AS5600
+const uint16_t AS5600_CONFIG = 0x000C;           // Config of AS5600
 
 // Calibration Config
 const uint8_t ROUGH_PWM_STEP = 10; // When moving towards the endpoints, this will determine the rough step width (us)
-const uint8_t FINE_PWM_STEP = 3;   // When moving towards the endpoints, this will determine the fine step width (us)
+const uint8_t FINE_PWM_STEP = 5;   // When moving towards the endpoints, this will determine the fine step width (us)
 const uint8_t SAMPLE_PWM_STEP = 5; // When sampling, this is the amount we will increment the PWM signal in us
 const std::string SAMPLE_FILENAME = "sample.csv"; // Filename for sampling
 
@@ -102,42 +102,43 @@ int main() {
     // Gets the current rotational step (0 - 4095)
     uint16_t lastAbsoluteStep = as5600.getStep();
     uint16_t absoluteStep;
+    uint8_t stepsOver = 0;
 
     float currentPulseWidth;
     
-    // Rough Measurement - moves downward until motor stops
-    // Increments currentPulseWidth downward with the end condition being that currentPulseWidth can't be less than 0
-    for(currentPulseWidth = MID_PULSE - ROUGH_PWM_STEP; currentPulseWidth > 0; currentPulseWidth -= ROUGH_PWM_STEP){
+    // // Rough Measurement - moves downward until motor stops
+    // // Increments currentPulseWidth downward with the end condition being that currentPulseWidth can't be less than 0
+    // for(currentPulseWidth = MID_PULSE - ROUGH_PWM_STEP; currentPulseWidth > 0; currentPulseWidth -= ROUGH_PWM_STEP){
       
-      // Sets channel one ROUGH increment down
-      pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
+    //   // Sets channel one ROUGH increment down
+    //   pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
 
-      // Give motor time to move and settle
-      // ~4.5ms to move motor (BASED ON 10us STEPS) + 2.2ms ASM5600 delay + 3.3ms buffer = 10ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    //   // Give motor time to move and settle
+    //   // ~4.5ms to move motor (BASED ON 10us STEPS) + 2.2ms ASM5600 delay + 3.3ms buffer = 10ms
+    //   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-      // Gets the absolute rotation
-      absoluteStep = as5600.getStep();
+    //   // Gets the absolute rotation
+    //   absoluteStep = as5600.getStep();
 
-      // This condition triggers if the absolute step does NOT change
-      if(absoluteStep == lastAbsoluteStep){
-        break;
-      }
-      else{
-        lastAbsoluteStep = absoluteStep;
-      }
-    }
+    //   // This condition triggers if the absolute step does NOT change
+    //   if(absoluteStep == lastAbsoluteStep){
+    //     break;
+    //   }
+    //   else{
+    //     lastAbsoluteStep = absoluteStep;
+    //   }
+    // }
 
-    // Now we go back 2 steps and then move in finer steps
-    currentPulseWidth = currentPulseWidth + (2 * ROUGH_PWM_STEP);
-    pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    lastAbsoluteStep = as5600.getStep();
+    // // Now we go back 10 steps and then move in finer steps
+    // currentPulseWidth = currentPulseWidth + (10 * ROUGH_PWM_STEP);
+    // pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
+    // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // lastAbsoluteStep = as5600.getStep();
     
     // Fine Measurement - moves downward until motor stops
     
     // Increments currentPulseWidth downward with the end condition being that currentPulseWidth can't be less than 0
-    for(currentPulseWidth = currentPulseWidth - FINE_PWM_STEP; currentPulseWidth > 0; currentPulseWidth -= FINE_PWM_STEP){
+    for(currentPulseWidth = MID_PULSE - FINE_PWM_STEP; currentPulseWidth > 0; currentPulseWidth -= FINE_PWM_STEP){
       
       // Sets channel one ROUGH increment down
       pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
@@ -151,15 +152,21 @@ int main() {
 
       // This condition triggers if the absolute step does NOT change
       if(absoluteStep == lastAbsoluteStep){
-        break;
+        if(stepsOver > 3){
+          break;
+        }
+        else{
+          stepsOver++;
+        }
       }
       else{
         lastAbsoluteStep = absoluteStep;
+        stepsOver = 0;
       }
     }
 
     // Now we go back 2 steps and record that as the minimum pulse width
-    currentPulseWidth = currentPulseWidth + (2 * FINE_PWM_STEP);
+    currentPulseWidth = currentPulseWidth + ((stepsOver + 1) * FINE_PWM_STEP);
     pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
     
     measuredMinPulse = currentPulseWidth;
@@ -183,44 +190,44 @@ int main() {
     // Set to midpoint
     pca9685.setPulseWidth(CHANNEL, MID_PULSE);
     currentPulseWidth = MID_PULSE;
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // Gets the current rotational step (0 - 4095)
     lastAbsoluteStep = as5600.getStep();
     
-    // Rough Measurement - moves downward until motor stops
-    // Increments currentPulseWidth downward with the end condition being that currentPulseWidth can't greater than MAX_PULSE + 1000
-    for(currentPulseWidth = MID_PULSE + ROUGH_PWM_STEP; currentPulseWidth < SERVO_MAX_PULSE + 1000; currentPulseWidth += ROUGH_PWM_STEP){
+    // // Rough Measurement - moves downward until motor stops
+    // // Increments currentPulseWidth downward with the end condition being that currentPulseWidth can't greater than MAX_PULSE + 1000
+    // for(currentPulseWidth = MID_PULSE + ROUGH_PWM_STEP; currentPulseWidth < SERVO_MAX_PULSE + 1000; currentPulseWidth += ROUGH_PWM_STEP){
       
-      // Sets channel one ROUGH increment down
-      pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
+    //   // Sets channel one ROUGH increment down
+    //   pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
 
-      // Give motor time to move and settle
-      // ~4.5ms to move motor (BASED ON 10us STEPS) + 2.2ms ASM5600 delay + 3.3ms buffer = 10ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    //   // Give motor time to move and settle
+    //   // ~4.5ms to move motor (BASED ON 10us STEPS) + 2.2ms ASM5600 delay + 3.3ms buffer = 10ms
+    //   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-      // Gets the absolute rotation
-      absoluteStep = as5600.getStep();
+    //   // Gets the absolute rotation
+    //   absoluteStep = as5600.getStep();
 
-      // This condition triggers if the absolute step does NOT change
-      if(absoluteStep == lastAbsoluteStep){
-        break;
-      }
-      else{
-        lastAbsoluteStep = absoluteStep;
-      }
-    }
+    //   // This condition triggers if the absolute step does NOT change
+    //   if(absoluteStep == lastAbsoluteStep){
+    //     break;
+    //   }
+    //   else{
+    //     lastAbsoluteStep = absoluteStep;
+    //   }
+    // }
 
-    // Now we go back 2 steps and then move in finer steps
-    currentPulseWidth = currentPulseWidth - (2 * ROUGH_PWM_STEP);
-    pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    lastAbsoluteStep = as5600.getStep();
+    // // Now we go back 10 steps and then move in finer steps
+    // currentPulseWidth = currentPulseWidth - (10 * ROUGH_PWM_STEP);
+    // pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
+    // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // lastAbsoluteStep = as5600.getStep();
 
     // Fine Measurement - moves downward until motor stops
     
     // Increments currentPulseWidth downward with the end condition being that currentPulseWidth can't be less than 0
-    for(currentPulseWidth = currentPulseWidth + FINE_PWM_STEP; currentPulseWidth < SERVO_MAX_PULSE + 1000; currentPulseWidth += FINE_PWM_STEP){
+    for(currentPulseWidth = MID_PULSE + FINE_PWM_STEP; currentPulseWidth < SERVO_MAX_PULSE + 1000; currentPulseWidth += FINE_PWM_STEP){
       
       // Sets channel one ROUGH increment down
       pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
@@ -234,15 +241,21 @@ int main() {
 
       // This condition triggers if the absolute step does NOT change
       if(absoluteStep == lastAbsoluteStep){
-        break;
+        if(stepsOver > 3){
+          break;
+        }
+        else{
+          stepsOver++;
+        }
       }
       else{
         lastAbsoluteStep = absoluteStep;
+        stepsOver = 0;
       }
     }
 
     // Now we go back 2 steps and record that as the maximum pulse width
-    currentPulseWidth = currentPulseWidth - (2 * FINE_PWM_STEP);
+    currentPulseWidth = currentPulseWidth - ((stepsOver + 1) * FINE_PWM_STEP);
     pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
     
     measuredMaxPulse = currentPulseWidth;
@@ -291,7 +304,7 @@ int main() {
     }
 
     // Exits when currentPulseWidth steps over measuredMinPulse, so now we need to go to measuredMinPulse
-    pca9685.setPulseWidth(CHANNEL, measuredMinPulse + 2 * SAMPLE_PWM_STEP);
+    pca9685.setPulseWidth(CHANNEL, measuredMinPulse + 5 * SAMPLE_PWM_STEP);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     pca9685.setPulseWidth(CHANNEL, measuredMinPulse);
     currentPulseWidth = measuredMinPulse;
@@ -353,6 +366,7 @@ int main() {
     std::cout << "dcMultiplier measured to be: " << dcMultiplier << std::endl;
     std::cout << "Succesfully calculated dc calibration variables." << std::endl;
 
+    servo.moveToPosition(SERVO_DEFAULT_ANGLE).join();
 
     std::cout << "Calibration Successful!" << std::endl;
 
