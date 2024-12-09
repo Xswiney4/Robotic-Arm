@@ -5,6 +5,7 @@
 #include "pca9685.h"
 #include "servo.h"
 #include "ik_solver.h"
+#include "config.h"
 
 #include <string>
 #include <cstdint>  // For uint8_t
@@ -16,15 +17,21 @@ private:
     I2C* i2c;            // I2C Object
     PCA9685* pca; 		// PCA object
     
-    Servo* servo_1;      // Servo controlling Joint 1
-    Servo* servo_2;      // Servo controlling Joint 2
-    Servo* servo_3;      // Servo controlling Joint 3
-    Servo* servo_4;      // Servo controlling Joint 4
-    Servo* servo_5;      // Servo controlling Joint 5
-    Servo* servo_6;      // Servo controlling Joint 6
+    Servo* servos[6]; // Array containing pointers to all servos
+    Servo* j1s;      // Servo controlling Joint 1
+    Servo* j2s;      // Servo controlling Joint 2
+    Servo* j3s;      // Servo controlling Joint 3
+    Servo* j4s;      // Servo controlling Joint 4
+    Servo* j5s;      // Servo controlling Joint 5
+    Servo* j6s;      // Servo controlling Joint 6
     
     // Real-time Characterists
     float endSpeed;     // Speed of the end effector
+
+    // Robotic Variables
+    // <DH TABLE>
+    // <TRANSFORMATION MATRIX>
+    // <JACOBIAN MATRIX>
 
     // Validation
     void validateAngle(uint8_t motor, float angle); // Ensure the angle specified is within the limits of the motor
@@ -33,7 +40,7 @@ private:
 
 public:
 	// Constructor / Destructor
-    RoboticArmBuilder(std::string configPath); // Builds arm
+    RoboticArmBuilder(); // Builds arm
     ~RoboticArmBuilder();                      // Resets arm back to default position
     
     // Arm Control
