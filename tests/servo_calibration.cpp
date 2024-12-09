@@ -49,7 +49,7 @@ const float SERVO_SPEED =  45;            // degrees/second
 const float SERVO_STEP_FREQ = 50;         // hz
 
 // AS5600 Config
-const uint16_t AS5600_CONFIG = 0x000C;           // Config of AS5600
+const uint16_t AS5600_CONFIG = 0x0000;           // Config of AS5600
 
 // Calibration Config
 const uint8_t ROUGH_PWM_STEP = 10; // When moving towards the endpoints, this will determine the rough step width (us)
@@ -114,7 +114,7 @@ int main() {
 
       // Give motor time to move and settle
       // ~4.5ms to move motor (BASED ON 10us STEPS) + 2.2ms ASM5600 delay + 3.3ms buffer = 10ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
       // Gets the absolute rotation
       absoluteStep = as5600.getStep();
@@ -131,9 +131,9 @@ int main() {
     // Now we go back 2 steps and then move in finer steps
     currentPulseWidth = currentPulseWidth + (2 * ROUGH_PWM_STEP);
     pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
-    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     lastAbsoluteStep = as5600.getStep();
-
+    
     // Fine Measurement - moves downward until motor stops
     
     // Increments currentPulseWidth downward with the end condition being that currentPulseWidth can't be less than 0
@@ -144,7 +144,7 @@ int main() {
 
       // Give motor time to move and settle
       // ~1.35ms to move motor (BASED ON 3us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 5ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
       // Gets the absolute rotation
       absoluteStep = as5600.getStep();
@@ -164,7 +164,7 @@ int main() {
     
     measuredMinPulse = currentPulseWidth;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     std::cout << "Lower pulse width measured to be " << measuredMinPulse << "us." << std::endl;
 
@@ -197,7 +197,7 @@ int main() {
 
       // Give motor time to move and settle
       // ~4.5ms to move motor (BASED ON 10us STEPS) + 2.2ms ASM5600 delay + 3.3ms buffer = 10ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
       // Gets the absolute rotation
       absoluteStep = as5600.getStep();
@@ -214,7 +214,7 @@ int main() {
     // Now we go back 2 steps and then move in finer steps
     currentPulseWidth = currentPulseWidth - (2 * ROUGH_PWM_STEP);
     pca9685.setPulseWidth(CHANNEL, currentPulseWidth);
-    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     lastAbsoluteStep = as5600.getStep();
 
     // Fine Measurement - moves downward until motor stops
@@ -227,7 +227,7 @@ int main() {
 
       // Give motor time to move and settle
       // ~1.35ms to move motor (BASED ON 3us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 5ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
       // Gets the absolute rotation
       absoluteStep = as5600.getStep();
@@ -247,7 +247,7 @@ int main() {
     
     measuredMaxPulse = currentPulseWidth;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     std::cout << "Upper pulse width measured to be " << measuredMaxPulse << "us" << std::endl;
 
@@ -281,7 +281,7 @@ int main() {
 
       // Give motor time to move and settle
       // ~2.35ms to move motor (BASED ON 5us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 6ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(6));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
       // Gets the absolute rotation
       absoluteStep = as5600.getStep();
@@ -292,7 +292,7 @@ int main() {
 
     // Exits when currentPulseWidth steps over measuredMinPulse, so now we need to go to measuredMinPulse
     pca9685.setPulseWidth(CHANNEL, measuredMinPulse + 2 * SAMPLE_PWM_STEP);
-    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     pca9685.setPulseWidth(CHANNEL, measuredMinPulse);
     currentPulseWidth = measuredMinPulse;
 
@@ -304,7 +304,7 @@ int main() {
 
       // Give motor time to move and settle
       // ~2.35ms to move motor (BASED ON 5us STEPS) + 2.2ms ASM5600 delay + 1.45ms buffer = 6ms
-      std::this_thread::sleep_for(std::chrono::milliseconds(6));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
       // Gets the absolute rotation
       absoluteStep = as5600.getStep();
