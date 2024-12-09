@@ -41,10 +41,10 @@ const uint8_t PCA9685_FREQ = 50;    // hz
 const uint8_t CHANNEL = 0;          // Channel the servo will be plugged into
 
 // Servo Config ~~~~~ ADJUST BEFORE CALIBRATING ~~~~~
-const uint16_t SERVO_MIN_PULSE = 500;     // microseconds
-const uint16_t SERVO_MAX_PULSE = 2500;    // microseconds
-const float SERVO_MAX_ANGLE = 270;        // degrees
-const float SERVO_DEFAULT_ANGLE = 135;    // degrees
+const uint16_t SERVO_MIN_PULSE = 1000;     // microseconds
+const uint16_t SERVO_MAX_PULSE = 2000;    // microseconds
+const float SERVO_MAX_ANGLE = 180;        // degrees
+const float SERVO_DEFAULT_ANGLE = 90;    // degrees
 const float SERVO_SPEED =  45;            // degrees/second
 const float SERVO_STEP_FREQ = 50;         // hz
 
@@ -56,10 +56,18 @@ const uint8_t ROUGH_PWM_STEP = 10; // When moving towards the endpoints, this wi
 const uint8_t FINE_PWM_STEP = 5;   // When moving towards the endpoints, this will determine the fine step width (us)
 const uint8_t SAMPLE_PWM_STEP = 5; // When sampling, this is the amount we will increment the PWM signal in us
 const std::string SAMPLE_FILENAME = "sample.csv"; // Filename for sampling
+const float PULSE_CLIP_THRESHOLD = 10; // This is the amount in us to clip from each of the measured max/mins
+
+// Validation Config
+const float NUM_VALID_TESTS = 8; // Number of validation tests to go through
+const float VALID_THRESHOLD = 1; // Number of degrees error in tests to pass
 
 // Output Variables
 float measuredMinPulse;
+uint16_t measuredMinStep;
 float measuredMaxPulse;
+uint16_t measuredMaxStep;
+float measuredMaxAngle;
 float pwmOffset;
 float pwmMultiplier;
 float dcOffset;
@@ -80,11 +88,6 @@ int main() {
     pca9685.setPWMFrequency(PCA9685_FREQ);   // Set output frequency of PWM signal
 
     AS5600 as5600(&i2c, AS5600_CONFIG);      // AS5600 Object
-
-    ServoParams servoParams = {&pca9685, CHANNEL, SERVO_MIN_PULSE, SERVO_MAX_PULSE
-							 , SERVO_MAX_ANGLE, SERVO_DEFAULT_ANGLE, SERVO_SPEED, SERVO_STEP_FREQ};
-    
-    Servo servo(servoParams);
 
     // Set to midpoint
     uint16_t MID_PULSE = (SERVO_MAX_PULSE + SERVO_MIN_PULSE) / 2;
@@ -265,18 +268,46 @@ int main() {
     std::cout << "Upper pulse width measured to be " << measuredMaxPulse << "us" << std::endl;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~ Calculate New maxAngle/adjustedMax/adjustedMin ~~~~~~~~~~~~~~~~~~~~
+
+    std::cout << "Calculating adjusted max/min/angle..." << std::endl;
+
+    // Clipping ends of range
+    measuredMaxPulse -= PULSE_CLIP_THRESHOLD;
+    measuredMinPulse += PULSE_CLIP_THRESHOLD;
+
+    // Move to adjusted minRange and get step
+    pca9685.setPulseWidth(CHANNEL, measuredMinPulse);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+    measuredMinStep = as5600.getStep();
+
+    // Move to adjusted maxRange and get step
+    pca9685.setPulseWidth(CHANNEL, measuredMaxPulse);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+    measuredMaxStep = as5600.getStep();
+
+    // Calculate new angle range
+    measuredMaxAngle = (measuredMaxStep - measuredMinStep) * 360.0f / 4096.0f;
+
+    std::cout << "Adjusted measuredMaxPulse: " << measuredMaxPulse << std::endl;
+    std::cout << "Adjusted measuredMinPulse: " << measuredMinPulse << std::endl;
+    std::cout << "measuredMaxAngle: " << measuredMaxAngle << std::endl;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Calculate pwmOffset and pwmMultiplier ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
-    std::cout << "Calculating pwm calibration variables..." << std::endl;
+    // std::cout << "Calculating pwm calibration variables..." << std::endl;
 
-    float measuredMidPulse = (measuredMaxPulse + measuredMinPulse) / 2;
+    // float measuredMidPulse = (measuredMaxPulse + measuredMinPulse) / 2;
 
-    pwmOffset = measuredMidPulse - MID_PULSE;
-    pwmMultiplier = measuredMaxPulse / (SERVO_MAX_PULSE + pwmOffset);
+    // pwmOffset = measuredMidPulse - MID_PULSE;
+    // pwmMultiplier = measuredMaxPulse / (SERVO_MAX_PULSE + pwmOffset);
 
-    std::cout << "pwmOffset measured to be: " << pwmOffset << std::endl;
-    std::cout << "pwmMultiplier measured to be: " << pwmMultiplier << std::endl;
-    std::cout << "Succesfully calculated pwm calibration variables." << std::endl;
+    // std::cout << "pwmOffset measured to be: " << pwmOffset << std::endl;
+    // std::cout << "pwmMultiplier measured to be: " << pwmMultiplier << std::endl;
+    // std::cout << "Succesfully calculated pwm calibration variables." << std::endl;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // ~~ Sample Entire Range ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -355,20 +386,53 @@ int main() {
 
     std::cout << "Succesfully written dataset to " << SAMPLE_FILENAME << std::endl;
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // ~~ Calculate dcOffset and dcMultiplier ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    std::cout << "Calculating dc calibration variables..." << std::endl;
-
-
-
-    std::cout << "dcOffset measured to be: " << dcOffset << std::endl;
-    std::cout << "dcMultiplier measured to be: " << dcMultiplier << std::endl;
-    std::cout << "Succesfully calculated dc calibration variables." << std::endl;
-
-    servo.moveToPosition(SERVO_DEFAULT_ANGLE).join();
 
     std::cout << "Calibration Successful!" << std::endl;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~ Validation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    std::cout << "Beginning validation..." << std::endl;
+
+    // Create calibrated servo object
+    ServoParams servoParams = {&pca9685, CHANNEL, measuredMinPulse, measuredMaxPulse
+							 , measuredMaxAngle, measuredMaxAngle/2.0f, SERVO_SPEED, SERVO_STEP_FREQ};
+    
+    Servo servo(servoParams);
+
+    // Move to position 0 and zero encoder
+    std::cout << "Zeroing..." << std::endl;
+    servo.moveToPosition(0).join();
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    as5600.zero();
+    std::cout << "Successfully zeroed" << std::endl;
+
+    float actualAngle;
+    // Validate angles within range:
+    for(float angle = 0; angle <= measuredMaxAngle; angle += measuredMaxAngle/NUM_VALID_TESTS){
+      std::cout << "Testing: " << angle << " degrees..." << std::endl;
+
+      // Move servo to position
+      servo.moveToPosition(angle).join();
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+      // Get actual angle:
+      actualAngle = as5600.getAngle();
+      std::cout << "Measured Angle: " << actualAngle << " degrees..." << std::endl;
+
+      // Check error
+      if(abs(actualAngle - angle) <= VALID_THRESHOLD){
+        // Pass!
+        std::cout << "Passed!" << std::endl;
+      }
+      else{
+        // Fail!
+        std::cout << "Failed!" << std::endl;
+      }
+
+    }
+
+
 
     return 0;
 }

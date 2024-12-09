@@ -25,8 +25,8 @@ Servo::Servo(const ServoParams& params)
     angleToPwmSlope = ((maxPulse - minPulse) / maxAngle);
     rotationStepPeriod = 1000.0f / params.rotationStepFreq; // In ms
     
-    // Switches channel off
-    disable();
+    // Switches channel on
+    enable();
     
     // Sets the onTime to 0
     pca -> setOnTime(pcaChannel, 0x0000);
