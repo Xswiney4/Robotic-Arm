@@ -3,6 +3,8 @@
 
 #include "RoboticArmBuilder.h"
 
+#include <stdexcept>   // For std::runtime_error
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Constructor ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,8 +57,8 @@ RoboticArmBuilder::~RoboticArmBuilder(){
 // ~~ Validation ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Ensure the angle specified is within the limits of the motor
-void RoboticArmBuilder::validateAngle(uint8_t motor, float angle){
-    
+bool RoboticArmBuilder::validateAngle(uint8_t motor, float angle){
+    return servos[motor]->isAngleValid(angle);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,22 +70,61 @@ void RoboticArmBuilder::validateAngle(uint8_t motor, float angle){
 // ~~ Arm Control ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Sets the angle of a given motor
-void RoboticArmBuilder::setAngle(uint8_t motor, float angle){
-    servos[motor]->moveToPosition(angle).detach();
+void RoboticArmBuilder::setAngle(uint8_t motor, float angle, bool wait){
+    
+    // Throws error if angle is not in servo's range
+    if(!validateAngle(motor, angle)){
+        throw std::runtime_error("Angle is not within servo's range");
+    }
+    
+    // Waits until the motors stops moving before moving on
+    if(wait){
+        servos[motor]->moveToPosition(angle).join();
+    }
+    // Moves on without waiting for the servo to stop
+    else{
+        servos[motor]->moveToPosition(angle).detach();
+    }
 }
 
 // Sets the orientation of the last 3 joints in terms of pitch, yaw, and roll
-void RoboticArmBuilder::setOrientation(float pitch, float yaw, float roll){
-    servos[5]->moveToPosition(roll).detach();
-    servos[4]->moveToPosition(yaw).detach();
-    servos[3]->moveToPosition(pitch).detach();
+void RoboticArmBuilder::setOrientation(float pitch, float yaw, float roll, bool wait){
+    
+    // Throws error if angle is not in servo's range
+    if(!validateAngle(3, pitch)){
+        throw std::runtime_error("Pitch is not within servo's range");
+    }
+    else if(!validateAngle(4, yaw)){
+        throw std::runtime_error("Yaw is not within servo's range");
+    }
+    else if(!validateAngle(5, roll)){
+        throw std::runtime_error("Roll is not within servo's range");
+    }
+    
+    // Waits until the motors stops moving before moving on
+    if(wait){
+        servos[5]->moveToPosition(roll).detach();
+        servos[4]->moveToPosition(yaw).detach();
+        servos[3]->moveToPosition(pitch).join();
+    }
+    // Moves on without waiting for the servo to stop
+    else{
+        servos[5]->moveToPosition(roll).detach();
+        servos[4]->moveToPosition(yaw).detach();
+        servos[3]->moveToPosition(pitch).detach();
+    }
 }
 
 /* Uses inverse kinematics to calculate and set the motors so that the end effector
  * touches the given x, y, and z position.
  */
-void RoboticArmBuilder::setEndPosition(float x, float y, float z){
+void RoboticArmBuilder::setEndPosition(float x, float y, float z, bool wait){
+    if(wait){
 
+    }
+    else{
+        
+    }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

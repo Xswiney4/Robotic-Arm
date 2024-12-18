@@ -72,6 +72,10 @@ public:
     std::thread moveToPosition(float angle); // In degrees
     void setSpeed(float speed);		// In radians/second
     
+    // Validation
+    bool isAngleValid(float angle); // Returns true if angle is within servo range
+
+    // Enable/Disable
     void disable(); // Disables servo motor
     void enable(); // Enables servo motor
 

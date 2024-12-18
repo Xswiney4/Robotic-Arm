@@ -144,6 +144,15 @@ void Servo::setSpeed(float speed){
 	rotationSpeed = speed;
 }
 
+// Returns true if angle is within servo range
+bool Servo::isAngleValid(float angle){
+    if(angle <= maxAngle){
+        return true;
+    }
+    return false;
+}
+
+
 // Disables servo motor
 void Servo::disable(){
 	pca -> switchOff(pcaChannel);
