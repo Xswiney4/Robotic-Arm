@@ -23,6 +23,14 @@ private:
     // Real-time Characterists
     float endSpeed;     // Speed of the end effector
 
+    // Arm Target Position/Orientation
+    float targetPitch;
+    float targetYaw;
+    float targetRoll;
+    float targetX;
+    float targetY;
+    float targetZ;
+
     // Robotic Variables
     // <DH TABLE>
     // <TRANSFORMATION MATRIX>
@@ -31,7 +39,14 @@ private:
     // Validation
     bool validateAngle(uint8_t motor, float angle); // Ensure the angle specified is within the limits of the motor
 
+    // Conversion Factors
+    static const float DEG_TO_RAD;  // Degrees to radians conversion factor
+    static const float RAD_TO_DEG;  // Radians to degrees conversion factor
+
     // Helper Methods
+    float radToDeg(float rad); // Converts radians to degrees
+    float degToRad(float deg); // Converts degrees to radians
+    void updateJoints(); // Calculates and updates joint angles based on target position/orientation variables
 
 public:
 	// Constructor / Destructor

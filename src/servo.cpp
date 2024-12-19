@@ -24,12 +24,15 @@ Servo::Servo(const ServoParams& params)
     // Preprocessing for angle calculations based on servo motor characteristics
     angleToPwmSlope = ((maxPulse - minPulse) / maxAngle);
     rotationStepPeriod = 1000.0f / params.rotationStepFreq; // In ms
-    
+
     // Switches channel on
     enable();
     
     // Sets the onTime to 0
     pca -> setOnTime(pcaChannel, 0x0000);
+
+    // Set servo to default angle
+    this->setPosition(defaultAngle);
     
 }
 
