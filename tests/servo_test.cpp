@@ -23,7 +23,7 @@ const float SERVO_2_MAX_ANGLE = 263.848; // degrees
 const float SERVO_2_DEFAULT_ANGLE = 130; // degrees
 
 const float SERVO_SPEED =  45; // degrees/second
-const float SERVO_STEP_FREQ = 50; // Hz
+const float SERVO_UPDATE_RESOLUTION = 5; // Updates/degree
 
 
 int main() {
@@ -33,19 +33,20 @@ int main() {
 
 	// Sets up Servo parameters
 	ServoParams servo1Params = {&pca9685, 0, SERVO_1_MIN_PULSE, SERVO_1_MAX_PULSE
-							 , SERVO_1_MAX_ANGLE, SERVO_1_DEFAULT_ANGLE, SERVO_SPEED, SERVO_STEP_FREQ};
+							 , SERVO_1_MAX_ANGLE, SERVO_1_DEFAULT_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
 
 	ServoParams servo2Params = {&pca9685, 1, SERVO_2_MIN_PULSE, SERVO_2_MAX_PULSE
-							 , SERVO_2_MAX_ANGLE, SERVO_2_DEFAULT_ANGLE, SERVO_SPEED, SERVO_STEP_FREQ};
+							 , SERVO_2_MAX_ANGLE, SERVO_2_DEFAULT_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
     
 	Servo servo1(servo1Params);
 	Servo servo2(servo2Params);
 
 
 	servo1.moveToPosition(0).join();
+	servo1.setSpeed(10);
 	servo1.moveToPosition(260).join();
-	
-	sleep(100);
+	servo1.setSpeed(90);
+	servo1.moveToPosition(0).join();
 
 	std::cout << "Terminating Program" << std::endl;
     

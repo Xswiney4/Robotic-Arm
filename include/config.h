@@ -24,8 +24,8 @@
 // ~~~ Servo Parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Global Servo Params
-#define SERVO_STEP_RATE 50 // hz
-#define SERVO_SPEED 30 // deg/sec
+#define SERVO_UPDATE_RESOLUTION 5 // updates/degree (servo smoothness)
+#define SERVO_SPEED 90 // deg/sec
 
 // Joint 1 Servo Params
 #define J1S_CHANNEL 0

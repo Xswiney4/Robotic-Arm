@@ -37,17 +37,17 @@ RoboticArmBuilder::RoboticArmBuilder(){
 
     // Constructing Servo Parameters
     ServoParams j1sParams = {pca, J1S_CHANNEL, J1S_MIN_PULSE, J1S_MAX_PULSE
-							 , J1S_MAX_ANGLE, J1S_DEF_ANGLE, SERVO_SPEED, SERVO_STEP_RATE};
+							 , J1S_MAX_ANGLE, J1S_DEF_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
     ServoParams j2sParams = {pca, J2S_CHANNEL, J2S_MIN_PULSE, J2S_MAX_PULSE
-							 , J2S_MAX_ANGLE, J2S_DEF_ANGLE, SERVO_SPEED, SERVO_STEP_RATE};
+							 , J2S_MAX_ANGLE, J2S_DEF_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
     ServoParams j3sParams = {pca, J3S_CHANNEL, J3S_MIN_PULSE, J3S_MAX_PULSE
-							 , J3S_MAX_ANGLE, J3S_DEF_ANGLE, SERVO_SPEED, SERVO_STEP_RATE};
+							 , J3S_MAX_ANGLE, J3S_DEF_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
     ServoParams j4sParams = {pca, J4S_CHANNEL, J4S_MIN_PULSE, J4S_MAX_PULSE
-							 , J4S_MAX_ANGLE, J4S_DEF_ANGLE, SERVO_SPEED, SERVO_STEP_RATE};
+							 , J4S_MAX_ANGLE, J4S_DEF_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
     ServoParams j5sParams = {pca, J5S_CHANNEL, J5S_MIN_PULSE, J5S_MAX_PULSE
-							 , J5S_MAX_ANGLE, J5S_DEF_ANGLE, SERVO_SPEED, SERVO_STEP_RATE};
+							 , J5S_MAX_ANGLE, J5S_DEF_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
     ServoParams j6sParams = {pca, J6S_CHANNEL, J6S_MIN_PULSE, J6S_MAX_PULSE
-							 , J6S_MAX_ANGLE, J6S_DEF_ANGLE, SERVO_SPEED, SERVO_STEP_RATE};
+							 , J6S_MAX_ANGLE, J6S_DEF_ANGLE, SERVO_SPEED, SERVO_UPDATE_RESOLUTION};
 
     // Create Servo objects
     servos[0] = new Servo(j1sParams);
@@ -68,6 +68,7 @@ RoboticArmBuilder::~RoboticArmBuilder(){
     }
     delete pca;
     delete i2c;
+    sleep(1);
 
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

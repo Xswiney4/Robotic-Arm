@@ -78,5 +78,6 @@
         "text_encoding": "cpp",
         "variant": "cpp",
         "fstream": "cpp"
-    }
+    },
+    "makefile.configureOnOpen": false
 }

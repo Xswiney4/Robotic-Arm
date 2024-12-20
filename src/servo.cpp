@@ -18,12 +18,14 @@ Servo::Servo(const ServoParams& params)
 		  : pca(params.pca9685), pcaChannel(params.pcaChannel)
           , minPulse(params.minPulse), maxPulse(params.maxPulse)
           , maxAngle(params.maxAngle), defaultAngle(params.defaultAngle)
-          , currentAngle(params.defaultAngle)
-          , rotationSpeed(params.rotationSpeed), running(false){
+          , currentAngle(params.defaultAngle), rotationSpeed(params.rotationSpeed)
+          , updateResolution(params.updateResolution), running(false){
     
     // Preprocessing for angle calculations based on servo motor characteristics
     angleToPwmSlope = ((maxPulse - minPulse) / maxAngle);
-    rotationStepPeriod = 1000.0f / params.rotationStepFreq; // In ms
+
+    // Sets Speed and update rotationStepPeriod variable
+    setSpeed(params.rotationSpeed);
 
     // Switches channel on
     enable();
@@ -142,9 +144,14 @@ std::thread Servo::moveToPosition(float angle){
 
 }
 
-// Sets the speed of the servo motor in radians/second
+// Sets the speed of the servo motor in degrees/second
 void Servo::setSpeed(float speed){
-	rotationSpeed = speed;
+    
+    rotationStepPeriod = 1000.0f / (updateResolution * speed); // In ms
+	rotationSpeed = speed; // degrees per second
+
+    std::cout << "Setting Speed: " << speed << std::endl;
+    std::cout << "rotationStepPeriod: " << rotationStepPeriod << std::endl;
 }
 
 // Returns true if angle is within servo range

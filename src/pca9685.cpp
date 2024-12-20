@@ -29,6 +29,7 @@ PCA9685::PCA9685(I2C* i2cPtr, uint8_t addr, uint8_t prescaler) : i2c(i2cPtr), ad
 
 // Destructor
 PCA9685::~PCA9685(){
+    allOff();
     sleep();
 }
 

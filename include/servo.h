@@ -23,7 +23,7 @@ struct ServoParams{
 
     // Rotation Characteristics
     float rotationSpeed;
-    float rotationStepFreq;
+    float updateResolution; // updates/degree (Affects smoothness)
 };
 
 class Servo
@@ -49,6 +49,7 @@ private:
     float targetAngle;
     float currentAngle;
     float rotationSpeed; // Degrees / Second
+    float updateResolution; // Updates/Degree
     
     // Velocity Control
     bool running;
