@@ -16,7 +16,7 @@ This project focuses on the development of a robotic arm that can be controlled 
 ## Links to Project Resources
 
 - **Pre-recorded Presentation Video**:  
-  [Watch the presentation video](https://drive.google.com/file/d/1t7i9vzRctd1PjiqfICgvUuddwQAcny_S/view?usp=drive_link)
+  [Watch the presentation video](https://youtu.be/ClRgPND4Dqc)
   
 - **Presentation Slides**:  
   [View the slides](https://docs.google.com/presentation/d/1wrV8rZokEJYW-xwzXIZEUA2fkYYTqJROhkFU0oX-HHM/edit?usp=drive_link)
