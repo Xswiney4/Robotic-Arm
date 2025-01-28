@@ -22,12 +22,8 @@ const float RoboticArmBuilder::RAD_TO_DEG = 180.0 / M_PI;
 // Constructor: Creates and initializes object
 RoboticArmBuilder::RoboticArmBuilder(){
 
-    targetPitch = -1.0;
-    targetYaw = -1.0;
-    targetRoll = -1.0;
-    targetX = -1.0;
-    targetY = -1.0;
-    targetZ = -1.0;
+    // Initializes targetPosition and targetOrientation
+    initStartVector();
 
     // I2C Construction
     i2c = new I2C(I2C_DIRECTORY);
@@ -97,12 +93,12 @@ void RoboticArmBuilder::updateJoints(){
 
     // ~~ Calculate RDesired ~~
     // Precompute cosines and sines
-    float cYaw = cos(degToRad(targetYaw));
-    float sYaw = sin(degToRad(targetYaw));
-    float cPitch = cos(degToRad(targetPitch));
-    float sPitch = sin(degToRad(targetPitch));
-    //float cRoll = cos(degToRad(targetRoll));
-    //float sRoll = sin(degToRad(targetRoll));
+    float cYaw = cos(degToRad(targetOrientation.yaw));
+    float sYaw = sin(degToRad(targetOrientation.yaw));
+    float cPitch = cos(degToRad(targetOrientation.pitch));
+    float sPitch = sin(degToRad(targetOrientation.pitch));
+    //float cRoll = cos(degToRad(targetOrientation.roll));
+    //float sRoll = sin(degToRad(targetOrientation.roll));
 
     // Z-axis of the end effector
     std::vector<float> zEffector = {
@@ -133,9 +129,9 @@ void RoboticArmBuilder::updateJoints(){
 
     // ~~ Calculate wrist center ~~
 
-    float wcX = targetX - D_6 * RDesired[0][2];
-    float wcY = targetY - D_6 * RDesired[1][2];
-    float wcZ = targetZ - D_6 * RDesired[2][2] - D_1;
+    float wcX = targetPosition.x - D_6 * RDesired[0][2];
+    float wcY = targetPosition.y - D_6 * RDesired[1][2];
+    float wcZ = targetPosition.z - D_6 * RDesired[2][2] - D_1;
 
     // ~~ Calculate Theta 1, 2, and 3 ~~
 
@@ -187,6 +183,17 @@ void RoboticArmBuilder::updateJoints(){
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~ Start Params ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Uses forward kinematics to calculate the starting position/orientation
+// based on default servo angles
+void RoboticArmBuilder::initStartVector(){
+
+    targetPosition = {0.0, 0.0, 0.0}; // {x, y, z}
+    targetOrientation = {0.0, 0.0, 0.0}; // {pitch, yaw, roll}
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Arm Control ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Sets the angle of a given motor
@@ -208,40 +215,16 @@ void RoboticArmBuilder::setAngle(uint8_t motor, float angle, bool wait){
 }
 
 // Sets the orientation of the last 3 joints in terms of pitch, yaw, and roll
-void RoboticArmBuilder::setOrientation(float pitch, float yaw, float roll, bool wait){
+void RoboticArmBuilder::setEE(Position position, Orientation orientation){
     
     // Set global variables
-    targetPitch = pitch;
-    targetYaw = yaw;
-    targetRoll = roll;
-
-    if (targetX == -1.0){
-        std::cout << "Target position undefined, orientation defined" << std::endl;
-        return;
-    }
+    targetPosition = position;
+    targetOrientation = orientation;
 
     // Update Joints
     updateJoints();
 }
 
-/* Uses inverse kinematics to calculate and set the motors so that the end effector
- * touches the given x, y, and z position.
- */
-void RoboticArmBuilder::setEndPosition(float x, float y, float z, bool wait){
-    
-    if (targetYaw == -1.0){
-        std::cout << "Please define orientation first" << std::endl;
-        return;
-    }
-
-    // Set global variables
-    targetX = x;
-    targetY = y;
-    targetZ = z;
-
-    // Update Joints
-    updateJoints();
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~ Set Arm Characterists ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

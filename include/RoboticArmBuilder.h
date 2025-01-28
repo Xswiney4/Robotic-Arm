@@ -4,11 +4,18 @@
 #include "i2c.h"
 #include "pca9685.h"
 #include "servo.h"
-#include "ik_solver.h"
 #include "config.h"
 
 #include <string>
 #include <cstdint>  // For uint8_t
+
+// Position/Orientation Structures
+struct Position{
+    float x, y, z;
+};
+struct Orientation{
+    float pitch, yaw, roll;
+};
 
 class RoboticArmBuilder
 {
@@ -24,12 +31,8 @@ private:
     float endSpeed;     // Speed of the end effector
 
     // Arm Target Position/Orientation
-    float targetPitch;
-    float targetYaw;
-    float targetRoll;
-    float targetX;
-    float targetY;
-    float targetZ;
+    Position targetPosition;
+    Orientation targetOrientation;
 
     // Robotic Variables
     // <DH TABLE>
@@ -52,11 +55,13 @@ public:
 	// Constructor / Destructor
     RoboticArmBuilder(); // Builds arm
     ~RoboticArmBuilder();                      // Resets arm back to default position
+
+    // Start Params
+    void initStartVector(); // Sets starting postion/orientation
     
     // Arm Control
     void setAngle(uint8_t motor, float angle, bool wait = true); // Sets a given motor to an angle
-    void setOrientation(float pitch, float yaw, float roll, bool wait = true);      // Sets pitch, yaw, and roll
-    void setEndPosition(float x, float y, float z, bool wait = true);               // Sets end effector position
+    void setEE(Position position, Orientation orientation);
 
     // Set Arm Characterists
     void setEndSpeed(float speed);  // Sets the target speed of the end effector.
